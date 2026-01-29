@@ -4,6 +4,8 @@ import { getClothingItem } from '@/lib/actions/clothing'
 import { ItemForm } from '@/components/forms/item-form'
 import { LoadingSpinner } from '@/components/shared/loading'
 
+export const dynamic = 'force-dynamic'
+
 interface AddPageProps {
   searchParams: Promise<{
     edit?: string

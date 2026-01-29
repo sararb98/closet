@@ -12,7 +12,8 @@ import { SeasonalChart } from '@/components/insights/seasonal-chart'
 import { ActivityChart } from '@/components/insights/activity-chart'
 import { LoadingSpinner } from '@/components/shared/loading'
 import { EmptyState } from '@/components/shared/empty-state'
-import { BarChart3 } from 'lucide-react'
+
+export const dynamic = 'force-dynamic'
 
 export default async function InsightsPage() {
   const [stats, mostWorn, seasonalUsage, typeDistribution, monthlyActivity] =
@@ -41,7 +42,7 @@ export default async function InsightsPage() {
         <Suspense fallback={<LoadingSpinner />}>
           {!hasData ? (
             <EmptyState
-              icon={BarChart3}
+              icon="chart"
               title="No data yet"
               description="Add items to your closet and start planning outfits to see insights about your wardrobe."
               actionLabel="Add Your First Item"

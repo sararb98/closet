@@ -5,6 +5,8 @@ import { CalendarView } from '@/components/calendar/calendar-view'
 import { LoadingCalendar } from '@/components/shared/loading'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
 
+export const dynamic = 'force-dynamic'
+
 interface CalendarPageProps {
   searchParams: Promise<{
     item?: string
