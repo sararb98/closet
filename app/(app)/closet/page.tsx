@@ -7,6 +7,8 @@ import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ClosetPage() {
   const [items, tags] = await Promise.all([
     getClothingItems(),
