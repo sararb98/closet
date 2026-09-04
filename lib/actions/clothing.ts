@@ -30,10 +30,42 @@ export async function getClothingItems(): Promise<ClothingItemWithTags[]> {
       )
     `)
     .eq('user_id', user.id)
+    .eq('archived', false)
     .order('created_at', { ascending: false })
 
   if (error) {
     console.error('Error fetching clothing items:', error)
+    return []
+  }
+
+  // Transform the data to include tags array
+  return ((data || []) as unknown as ClothingItemWithRelations[]).map(item => ({
+    ...item,
+    tags: item.item_tags?.map(it => it.clothing_tags).filter((t): t is ClothingTag => t !== null) || []
+  }))
+}
+
+export async function getArchivedItems(): Promise<ClothingItemWithTags[]> {
+  const supabase = await createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from('clothing_items')
+    .select(`
+      *,
+      item_tags (
+        tag_id,
+        clothing_tags (*)
+      )
+    `)
+    .eq('user_id', user.id)
+    .eq('archived', true)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching archived items:', error)
     return []
   }
 
@@ -88,7 +120,7 @@ export async function createClothingItem(
 
   const { data, error } = await supabase
     .from('clothing_items')
-    .insert(insertData as any)
+    .insert(insertData)
     .select()
     .single()
 
@@ -110,7 +142,7 @@ export async function updateClothingItem(
   
   const { data, error } = await supabase
     .from('clothing_items')
-    .update(updates as any)
+    .update(updates)
     .eq('id', id)
     .select()
     .single()
@@ -153,7 +185,7 @@ export async function toggleFavorite(
   
   const { error } = await supabase
     .from('clothing_items')
-    .update({ is_favorite: isFavorite } as any)
+    .update({ is_favorite: isFavorite })
     .eq('id', id)
 
   if (error) {
@@ -162,6 +194,31 @@ export async function toggleFavorite(
   }
 
   revalidatePath('/closet')
+  return { success: true, error: null }
+}
+
+export async function setClothingItemsArchived(
+  ids: string[],
+  archived: boolean
+): Promise<{ success: boolean; error: string | null }> {
+  if (ids.length === 0) {
+    return { success: true, error: null }
+  }
+
+  const supabase = await createClient()
+
+  const { error } = await supabase
+    .from('clothing_items')
+    .update({ archived })
+    .in('id', ids)
+
+  if (error) {
+    console.error('Error updating archived status:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/closet')
+  revalidatePath('/calendar')
   return { success: true, error: null }
 }
 
@@ -205,7 +262,7 @@ export async function createTag(
 
   const { data, error } = await supabase
     .from('clothing_tags')
-    .insert(tagData as any)
+    .insert(tagData)
     .select()
     .single()
 
@@ -230,7 +287,7 @@ export async function addTagToItem(
   
   const { error } = await supabase
     .from('item_tags')
-    .insert(itemTagData as any)
+    .insert(itemTagData)
 
   if (error) {
     console.error('Error adding tag to item:', error)

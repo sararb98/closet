@@ -104,7 +104,7 @@ export async function addOutfitToCalendar(
 
   const { error } = await supabase
     .from('calendar_outfits')
-    .insert(outfitData as any)
+    .insert(outfitData)
 
   if (error) {
     // Handle duplicate constraint
@@ -149,7 +149,7 @@ export async function updateOutfitPosition(
   
   const { error } = await supabase
     .from('calendar_outfits')
-    .update({ position: newPosition } as any)
+    .update({ position: newPosition })
     .eq('id', outfitId)
 
   if (error) {
@@ -191,7 +191,7 @@ export async function moveOutfitToDate(
     .update({ 
       date: newDate,
       position: nextPosition 
-    } as any)
+    })
     .eq('id', outfitId)
 
   if (error) {

@@ -7,7 +7,7 @@ import { ClothingFiltersComponent } from './clothing-filters'
 import { ClothingModal } from './clothing-modal'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ClothingItemWithTags, ClothingFilters, SortOption, ClothingTag } from '@/types'
-import { deleteClothingItem } from '@/lib/actions/clothing'
+import { deleteClothingItem, setClothingItemsArchived } from '@/lib/actions/clothing'
 import { useToast } from '@/hooks/use-toast'
 import { useRouter } from 'next/navigation'
 import {
@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Loader2 } from 'lucide-react'
+import { Archive, Loader2 } from 'lucide-react'
 
 interface ClothingGridProps {
   items: ClothingItemWithTags[]
@@ -39,6 +39,9 @@ export function ClothingGrid({ items, tags }: ClothingGridProps) {
   const [selectedItem, setSelectedItem] = useState<ClothingItemWithTags | null>(null)
   const [itemToDelete, setItemToDelete] = useState<ClothingItemWithTags | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [isArchiving, setIsArchiving] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
 
@@ -143,6 +146,47 @@ export function ClothingGrid({ items, tags }: ClothingGridProps) {
     router.push(`/add?edit=${item.id}`)
   }, [router])
 
+  const toggleSelectMode = useCallback(() => {
+    setSelectMode((prev) => !prev)
+    setSelectedIds(new Set())
+  }, [])
+
+  const toggleItemSelected = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }, [])
+
+  const handleArchiveSelected = useCallback(async () => {
+    if (selectedIds.size === 0) return
+
+    const ids = Array.from(selectedIds)
+    setIsArchiving(true)
+    const result = await setClothingItemsArchived(ids, true)
+    setIsArchiving(false)
+
+    if (result.success) {
+      toast({
+        title: 'Items archived',
+        description: `${ids.length} item${ids.length === 1 ? '' : 's'} moved to Archived.`,
+      })
+      setSelectedIds(new Set())
+      setSelectMode(false)
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error || 'Failed to archive items',
+        variant: 'destructive',
+      })
+    }
+  }, [selectedIds, toast])
+
   if (items.length === 0) {
     return <EmptyState type="closet" />
   }
@@ -157,7 +201,37 @@ export function ClothingGrid({ items, tags }: ClothingGridProps) {
         tags={tags}
         totalCount={items.length}
         filteredCount={filteredItems.length}
+        selectMode={selectMode}
+        onToggleSelectMode={toggleSelectMode}
       />
+
+      <AnimatePresence>
+        {selectMode && selectedIds.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-4 py-2"
+          >
+            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              {selectedIds.size} selected
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+                Clear
+              </Button>
+              <Button size="sm" onClick={handleArchiveSelected} disabled={isArchiving}>
+                {isArchiving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Archive className="mr-2 h-4 w-4" />
+                )}
+                Archive
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {sortedItems.length === 0 ? (
         <EmptyState type="search" />
@@ -176,6 +250,9 @@ export function ClothingGrid({ items, tags }: ClothingGridProps) {
                   onEdit={() => handleEdit(item)}
                   onDelete={() => setItemToDelete(item)}
                   onSchedule={() => router.push(`/calendar?item=${item.id}`)}
+                  selectMode={selectMode}
+                  selected={selectedIds.has(item.id)}
+                  onToggleSelect={() => toggleItemSelected(item.id)}
                 />
               ))}
             </AnimatePresence>

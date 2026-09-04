@@ -20,6 +20,11 @@ export interface TypeDistribution {
   count: number
 }
 
+export interface ColorDistribution {
+  color: string
+  count: number
+}
+
 export interface MonthlyActivity {
   month: string
   items_worn: number
@@ -31,6 +36,10 @@ interface SeasonRow {
 
 interface TypeRow {
   type: string
+}
+
+interface ColorRow {
+  color: string | null
 }
 
 interface OutfitDateRow {
@@ -122,6 +131,39 @@ export async function getTypeDistribution(): Promise<TypeDistribution[]> {
 
   return Object.entries(typeCounts)
     .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count)
+}
+
+// Groups by the `color` category field (not `color_hex`) so items sampled to
+// slightly different exact hexes - e.g. several photos of "burgundy" shoes -
+// still roll up into one bucket for analytics instead of fragmenting into
+// one slice per unique hex.
+export async function getColorDistribution(): Promise<ColorDistribution[]> {
+  const supabase = await createClient()
+  
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from('clothing_items')
+    .select('color')
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('Error fetching color distribution:', error)
+    return []
+  }
+
+  const colorCounts: Record<string, number> = {}
+  const items = (data || []) as ColorRow[]
+
+  items.forEach(item => {
+    if (!item.color) return
+    colorCounts[item.color] = (colorCounts[item.color] || 0) + 1
+  })
+
+  return Object.entries(colorCounts)
+    .map(([color, count]) => ({ color, count }))
     .sort((a, b) => b.count - a.count)
 }
 

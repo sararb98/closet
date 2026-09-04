@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { motion } from 'motion/react'
-import { Heart, MoreVertical, Pencil, Trash2, Calendar } from 'lucide-react'
+import { Heart, MoreVertical, Pencil, Trash2, Calendar, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -24,6 +24,9 @@ interface ClothingCardProps {
   onDelete?: () => void
   onSchedule?: () => void
   isDragging?: boolean
+  selectMode?: boolean
+  selected?: boolean
+  onToggleSelect?: () => void
 }
 
 export function ClothingCard({
@@ -33,6 +36,9 @@ export function ClothingCard({
   onDelete,
   onSchedule,
   isDragging = false,
+  selectMode = false,
+  selected = false,
+  onToggleSelect,
 }: ClothingCardProps) {
   const [isFavorite, setIsFavorite] = useState(item.is_favorite)
   const [isLoading, setIsLoading] = useState(false)
@@ -40,6 +46,7 @@ export function ClothingCard({
 
   const typeInfo = CLOTHING_TYPES.find(t => t.value === item.type)
   const colorInfo = COLORS.find(c => c.value === item.color)
+  const swatchHex = item.color_hex || colorInfo?.hex
 
   const handleFavorite = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -75,9 +82,10 @@ export function ClothingCard({
       transition={{ duration: 0.2 }}
       className={cn(
         'group relative bg-white dark:bg-zinc-950 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer',
-        isDragging && 'shadow-xl ring-2 ring-zinc-900'
+        isDragging && 'shadow-xl ring-2 ring-zinc-900',
+        selected && 'ring-2 ring-zinc-900 dark:ring-zinc-100'
       )}
-      onClick={onClick}
+      onClick={selectMode ? onToggleSelect : onClick}
     >
       {/* Image */}
       <div className="relative aspect-square bg-zinc-100 dark:bg-zinc-800">
@@ -90,61 +98,78 @@ export function ClothingCard({
         />
         
         {/* Favorite button */}
-        <button
-          onClick={handleFavorite}
-          disabled={isLoading}
-          className={cn(
-            'absolute top-2 right-2 p-2 rounded-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm transition-all',
-            'opacity-0 group-hover:opacity-100',
-            isFavorite && 'opacity-100'
-          )}
-        >
-          <Heart
+        {!selectMode && (
+          <button
+            onClick={handleFavorite}
+            disabled={isLoading}
             className={cn(
-              'h-4 w-4 transition-colors',
-              isFavorite ? 'fill-red-500 text-red-500' : 'text-zinc-500'
+              'absolute top-2 right-2 p-2 rounded-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm transition-all',
+              'opacity-0 group-hover:opacity-100',
+              isFavorite && 'opacity-100'
             )}
-          />
-        </button>
+          >
+            <Heart
+              className={cn(
+                'h-4 w-4 transition-colors',
+                isFavorite ? 'fill-red-500 text-red-500' : 'text-zinc-500'
+              )}
+            />
+          </button>
+        )}
 
-        {/* Menu */}
-        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="secondary"
-                size="icon"
-                className="h-8 w-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              {onSchedule && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSchedule(); }}>
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Schedule
-                </DropdownMenuItem>
+        {/* Menu / selection checkbox */}
+        {selectMode ? (
+          <div className="absolute top-2 left-2">
+            <div
+              className={cn(
+                'h-6 w-6 rounded-full border-2 flex items-center justify-center backdrop-blur-sm transition-colors',
+                selected
+                  ? 'bg-zinc-900 border-zinc-900 dark:bg-zinc-100 dark:border-zinc-100'
+                  : 'bg-white/80 border-zinc-300 dark:bg-zinc-900/80 dark:border-zinc-600'
               )}
-              {onEdit && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
-                  <Pencil className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-              )}
-              {onDelete && (
-                <DropdownMenuItem
-                  onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                  className="text-red-600 dark:text-red-400"
+            >
+              {selected && <Check className="h-4 w-4 text-white dark:text-zinc-900" />}
+            </div>
+          </div>
+        ) : (
+          <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  className="h-8 w-8 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {onSchedule && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSchedule(); }}>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Schedule
+                  </DropdownMenuItem>
+                )}
+                {onEdit && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
+                {onDelete && (
+                  <DropdownMenuItem
+                    onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                    className="text-red-600 dark:text-red-400"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
 
         {/* Wear count badge */}
         {item.wear_count > 0 && (
@@ -164,12 +189,13 @@ export function ClothingCard({
         <div className="flex items-center gap-2 text-sm text-zinc-500">
           <span>{typeInfo?.icon}</span>
           <span>{typeInfo?.label || item.type}</span>
-          {colorInfo && (
+          {swatchHex && (
             <>
               <span>•</span>
               <div
                 className="w-3 h-3 rounded-full border border-zinc-200"
-                style={{ backgroundColor: colorInfo.hex }}
+                style={{ backgroundColor: swatchHex }}
+                title={colorInfo?.label}
               />
             </>
           )}

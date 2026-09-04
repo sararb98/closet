@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import type { Database } from '@/types/database'
 
 function createDisabledClient() {
   if (process.env.NODE_ENV !== 'production') {
@@ -17,7 +18,7 @@ function createDisabledClient() {
         return { data: { session: null }, error: null }
       },
     },
-  } as ReturnType<typeof createServerClient>
+  } as unknown as ReturnType<typeof createServerClient<Database>>
 }
 
 export async function createClient() {
@@ -30,7 +31,7 @@ export async function createClient() {
 
   const cookieStore = await cookies()
 
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll()

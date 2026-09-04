@@ -7,14 +7,17 @@ import { Upload, X, Loader2, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { MAX_FILE_SIZE } from '@/lib/constants'
+import { ColorEyedropper } from './color-eyedropper'
 
 interface ImageUploadProps {
   value?: string
   onChange: (url: string, file?: File) => void
   disabled?: boolean
+  /** When provided, shows an eyedropper button that samples an exact color from the photo. */
+  onColorPick?: (hex: string) => void
 }
 
-export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, disabled, onColorPick }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -134,6 +137,9 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
                   <X className="h-4 w-4" />
                 </Button>
               </div>
+            )}
+            {!disabled && onColorPick && (
+              <ColorEyedropper imageUrl={preview} onPick={onColorPick} disabled={disabled} />
             )}
           </motion.div>
         ) : (

@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { getClothingItems, getTags } from '@/lib/actions/clothing'
 import { ClothingGrid } from '@/components/closet/clothing-grid'
+import { ArchivedItemsButton } from '@/components/closet/archived-items-button'
 import { LoadingGrid } from '@/components/shared/loading'
 import { EmptyState } from '@/components/shared/empty-state'
 import { Plus } from 'lucide-react'
@@ -19,12 +20,15 @@ export default async function ClosetPage() {
         <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
           My Closet
         </h1>
-        <Link href="/add">
-          <Button size="sm">
-            <Plus className="w-4 h-4 mr-1" />
-            Add Item
-          </Button>
-        </Link>
+        <div className="flex items-center gap-1">
+          <ArchivedItemsButton />
+          <Link href="/add">
+            <Button size="sm">
+              <Plus className="w-4 h-4 mr-1" />
+              Add Item
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Suspense fallback={<LoadingGrid />}>

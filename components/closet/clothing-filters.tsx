@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Search, SlidersHorizontal, X, Star } from 'lucide-react'
+import { Search, SlidersHorizontal, X, Star, ListChecks } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -31,6 +31,8 @@ interface ClothingFiltersProps {
   tags: ClothingTag[]
   totalCount: number
   filteredCount: number
+  selectMode?: boolean
+  onToggleSelectMode?: () => void
 }
 
 export function ClothingFiltersComponent({
@@ -41,6 +43,8 @@ export function ClothingFiltersComponent({
   tags,
   totalCount,
   filteredCount,
+  selectMode = false,
+  onToggleSelectMode,
 }: ClothingFiltersProps) {
   const [isOpen, setIsOpen] = useState(false)
 
@@ -243,6 +247,18 @@ export function ClothingFiltersComponent({
             ))}
           </SelectContent>
         </Select>
+
+        {/* Multi-select toggle */}
+        {onToggleSelectMode && (
+          <Button
+            variant={selectMode ? 'secondary' : 'outline'}
+            className="gap-2 shrink-0"
+            onClick={onToggleSelectMode}
+          >
+            <ListChecks className="h-4 w-4" />
+            <span className="hidden sm:inline">{selectMode ? 'Cancel' : 'Select'}</span>
+          </Button>
+        )}
       </div>
 
       {/* Active filters display */}

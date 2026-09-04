@@ -3,23 +3,26 @@ import {
   getMostWornItems,
   getSeasonalUsage,
   getTypeDistribution,
+  getColorDistribution,
   getMonthlyActivity,
   getClosetStats,
 } from '@/lib/actions/insights'
 import { StatsCards } from '@/components/insights/stats-cards'
 import { MostWornChart } from '@/components/insights/most-worn-chart'
 import { SeasonalChart } from '@/components/insights/seasonal-chart'
+import { ColorChart } from '@/components/insights/color-chart'
 import { ActivityChart } from '@/components/insights/activity-chart'
 import { LoadingSpinner } from '@/components/shared/loading'
 import { EmptyState } from '@/components/shared/empty-state'
 
 export default async function InsightsPage() {
-  const [stats, mostWorn, seasonalUsage, typeDistribution, monthlyActivity] =
+  const [stats, mostWorn, seasonalUsage, typeDistribution, colorDistribution, monthlyActivity] =
     await Promise.all([
       getClosetStats(),
       getMostWornItems(10),
       getSeasonalUsage(),
       getTypeDistribution(),
+      getColorDistribution(),
       getMonthlyActivity(),
     ])
 
@@ -54,6 +57,8 @@ export default async function InsightsPage() {
                 <MostWornChart items={mostWorn} />
                 <SeasonalChart data={seasonalUsage} />
               </div>
+
+              <ColorChart data={colorDistribution} />
 
               <ActivityChart data={monthlyActivity} />
 

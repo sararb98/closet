@@ -24,6 +24,7 @@ import { uploadImage } from '@/lib/supabase/storage'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/components/auth/auth-provider'
 import { cn } from '@/lib/utils'
+import { findNearestColorCategory } from '@/lib/color'
 
 interface ItemFormProps {
   item?: ClothingItemWithTags | null
@@ -46,10 +47,12 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
     type: item?.type || '',
     season: item?.season || [],
     color: item?.color || '',
+    color_hex: item?.color_hex || '',
     brand: item?.brand || '',
     purchase_price: item?.purchase_price?.toString() || '',
     notes: item?.notes || '',
     is_favorite: item?.is_favorite || false,
+    archived: item?.archived || false,
   })
 
   const handleImageChange = (url: string, file?: File) => {
@@ -57,6 +60,10 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
     if (file) {
       setImageFile(file)
     }
+  }
+
+  const handleColorPick = (hex: string) => {
+    setFormData((prev) => ({ ...prev, color_hex: hex, color: findNearestColorCategory(hex) }))
   }
 
   const handleSeasonToggle = (season: string) => {
@@ -110,10 +117,12 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
         type: formData.type,
         season: formData.season,
         color: formData.color || null,
+        color_hex: formData.color_hex || null,
         brand: formData.brand || null,
         purchase_price: formData.purchase_price ? parseFloat(formData.purchase_price) : null,
         notes: formData.notes || null,
         is_favorite: formData.is_favorite,
+        archived: formData.archived,
       }
 
       let result
@@ -171,8 +180,12 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
             <ImageUpload
               value={formData.image_url}
               onChange={handleImageChange}
+              onColorPick={handleColorPick}
               disabled={isSubmitting}
             />
+            <p className="text-xs text-zinc-500 mt-2">
+              Tip: use the color dropper on the photo to grab the item&apos;s exact color.
+            </p>
           </CardContent>
         </Card>
 
@@ -263,6 +276,30 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
             {/* Color */}
             <div className="space-y-2">
               <Label>Color</Label>
+              {formData.color_hex && (
+                <div className="flex items-center gap-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-2">
+                  <div
+                    className="h-9 w-9 shrink-0 rounded-full border border-zinc-300 dark:border-zinc-700"
+                    style={{ backgroundColor: formData.color_hex }}
+                  />
+                  <div className="min-w-0 flex-1 text-xs">
+                    <p className="font-mono text-zinc-700 dark:text-zinc-300">{formData.color_hex}</p>
+                    <p className="text-zinc-500">
+                      Matched to {COLORS.find((c) => c.value === formData.color)?.label ?? 'closest category'}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs"
+                    disabled={isSubmitting}
+                    onClick={() => setFormData((prev) => ({ ...prev, color_hex: '' }))}
+                  >
+                    Clear
+                  </Button>
+                </div>
+              )}
               <div className="flex flex-wrap gap-2">
                 {COLORS.map((color) => (
                   <button
@@ -349,6 +386,20 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
               />
               <Label htmlFor="favorite" className="cursor-pointer">
                 Mark as favorite
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="archived"
+                checked={formData.archived}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, archived: checked === true }))
+                }
+                disabled={isSubmitting}
+              />
+              <Label htmlFor="archived" className="cursor-pointer">
+                Archive (hide from closet)
               </Label>
             </div>
           </CardContent>

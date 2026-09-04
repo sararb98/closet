@@ -22,11 +22,13 @@ export type Database = {
           type: string
           season: string[]
           color: string | null
+          color_hex: string | null
           brand: string | null
           purchase_date: string | null
           purchase_price: number | null
           notes: string | null
           is_favorite: boolean
+          archived: boolean
           wear_count: number
           last_worn_date: string | null
           created_at: string
@@ -42,11 +44,13 @@ export type Database = {
           type: string
           season?: string[]
           color?: string | null
+          color_hex?: string | null
           brand?: string | null
           purchase_date?: string | null
           purchase_price?: number | null
           notes?: string | null
           is_favorite?: boolean
+          archived?: boolean
           wear_count?: number
           last_worn_date?: string | null
           created_at?: string
@@ -62,16 +66,19 @@ export type Database = {
           type?: string
           season?: string[]
           color?: string | null
+          color_hex?: string | null
           brand?: string | null
           purchase_date?: string | null
           purchase_price?: number | null
           notes?: string | null
           is_favorite?: boolean
+          archived?: boolean
           wear_count?: number
           last_worn_date?: string | null
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       clothing_tags: {
         Row: {
@@ -95,6 +102,7 @@ export type Database = {
           color?: string
           created_at?: string
         }
+        Relationships: []
       }
       item_tags: {
         Row: {
@@ -115,6 +123,7 @@ export type Database = {
           tag_id?: string
           created_at?: string
         }
+        Relationships: []
       }
       calendar_outfits: {
         Row: {
@@ -147,6 +156,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       user_preferences: {
         Row: {
@@ -176,6 +186,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
     }
     Views: {

@@ -33,6 +33,7 @@ export function ClothingModal({
 
   const typeInfo = CLOTHING_TYPES.find((t) => t.value === item.type)
   const colorInfo = COLORS.find((c) => c.value === item.color)
+  const swatchHex = item.color_hex || colorInfo?.hex
   const seasonInfo = item.season?.map((s) => SEASONS.find((season) => season.value === s))
 
   return (
@@ -69,15 +70,15 @@ export function ClothingModal({
                 <div className="flex items-center gap-2 text-sm text-zinc-500">
                   <span>{typeInfo?.icon}</span>
                   <span>{typeInfo?.label}</span>
-                  {colorInfo && (
+                  {(colorInfo || swatchHex) && (
                     <>
                       <span>•</span>
                       <div className="flex items-center gap-1">
                         <div
                           className="w-3 h-3 rounded-full border border-zinc-200"
-                          style={{ backgroundColor: colorInfo.hex }}
+                          style={{ backgroundColor: swatchHex }}
                         />
-                        <span>{colorInfo.label}</span>
+                        <span>{colorInfo?.label}</span>
                       </div>
                     </>
                   )}
