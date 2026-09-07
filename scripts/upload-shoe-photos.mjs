@@ -10,7 +10,7 @@ import { readFileSync, readdirSync } from 'fs'
 import { join, extname, basename } from 'path'
 
 const SUPABASE_URL = 'https://jprphldcbppzthfrubbr.supabase.co'
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpwcnBobGRjYnBwenRoZnJ1YmJyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTUzMDY0NCwiZXhwIjoyMDg1MTA2NjQ0fQ.Zg1ePSE7rUIdEIW_NqXKSLBb4EQNly3B0Fn5TFeV9D4'
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
 const STORAGE_BUCKET = 'clothing-images'
 const USER_ID = '70dca3fe-3e89-4f88-9a86-73336821b5d1'
 
@@ -115,3 +115,4 @@ async function main() {
 }
 
 main().catch(console.error)
+
