@@ -8,11 +8,19 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync, readdirSync } from 'fs'
 import { join, extname, basename } from 'path'
+import { config } from 'dotenv'
 
-const SUPABASE_URL = 'https://jprphldcbppzthfrubbr.supabase.co'
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
+// Load environment variables from .env.local
+config({ path: '.env.local' })
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jprphldcbppzthfrubbr.supabase.co'
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY
 const STORAGE_BUCKET = 'clothing-images'
 const USER_ID = '70dca3fe-3e89-4f88-9a86-73336821b5d1'
+
+if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
+  throw new Error('Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY')
+}
 
 // Map exact filename (without extension) → DB item name
 // Based on WhatsApp timestamp order matching catalog order #1-20
@@ -56,7 +64,7 @@ async function main() {
     process.exit(1)
   }
 
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY)
 
   const files = readdirSync(folder).filter(f =>
     ['.jpg', '.jpeg', '.png', '.webp'].includes(extname(f).toLowerCase())
