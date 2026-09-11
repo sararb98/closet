@@ -183,6 +183,108 @@ export async function updateScheduledOutfitStatus(
   return { success: true, error: null }
 }
 
+type WearLogItem = Pick<ClothingItem, 'id' | 'wear_count' | 'last_worn_date'>
+
+export async function createQuickWearLog(input: {
+  itemId: string
+  date: string
+}): Promise<{ success: boolean; error: string | null; logId?: string; item?: WearLogItem }> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
+    return { success: false, error: 'Choose a valid wear date' }
+  }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const { data: item } = await supabase
+    .from('clothing_items')
+    .select('id, name')
+    .eq('id', input.itemId)
+    .eq('user_id', user.id)
+    .eq('archived', false)
+    .maybeSingle()
+  if (!item) return { success: false, error: 'This item is unavailable' }
+
+  const { data: log, error: logError } = await supabase
+    .from('calendar_outfit_instances')
+    .insert({
+      user_id: user.id,
+      date: input.date,
+      name: `Wear log for ${item.name}`,
+      status: 'planned',
+      position: 0,
+    })
+    .select('id')
+    .single()
+  if (logError || !log) {
+    console.error('Error creating quick wear log:', logError)
+    return { success: false, error: logError?.message || 'Failed to log wear' }
+  }
+
+  const { error: logItemError } = await supabase
+    .from('calendar_outfit_instance_items')
+    .insert({ calendar_outfit_instance_id: log.id, item_id: item.id, position: 0 })
+  if (logItemError) {
+    await supabase.from('calendar_outfit_instances').delete().eq('id', log.id)
+    console.error('Error adding item to quick wear log:', logItemError)
+    return { success: false, error: logItemError.message }
+  }
+
+  const { error: statusError } = await supabase
+    .from('calendar_outfit_instances')
+    .update({ status: 'worn' })
+    .eq('id', log.id)
+    .eq('user_id', user.id)
+  if (statusError) {
+    await supabase.from('calendar_outfit_instances').delete().eq('id', log.id)
+    console.error('Error marking quick wear log as worn:', statusError)
+    return { success: false, error: statusError.message }
+  }
+
+  const { data: updatedItem } = await supabase
+    .from('clothing_items')
+    .select('id, wear_count, last_worn_date')
+    .eq('id', item.id)
+    .single()
+
+  revalidatePath('/calendar')
+  revalidatePath('/closet')
+  revalidatePath('/insights')
+  return { success: true, error: null, logId: log.id, item: updatedItem || undefined }
+}
+
+export async function undoQuickWearLog(logId: string): Promise<{ success: boolean; error: string | null; item?: WearLogItem }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const { data: logItems } = await supabase
+    .from('calendar_outfit_instance_items')
+    .select('item_id')
+    .eq('calendar_outfit_instance_id', logId)
+
+  const { error } = await supabase
+    .from('calendar_outfit_instances')
+    .delete()
+    .eq('id', logId)
+    .eq('user_id', user.id)
+  if (error) {
+    console.error('Error undoing quick wear log:', error)
+    return { success: false, error: error.message }
+  }
+
+  const itemId = logItems?.[0]?.item_id
+  const { data: updatedItem } = itemId
+    ? await supabase.from('clothing_items').select('id, wear_count, last_worn_date').eq('id', itemId).maybeSingle()
+    : { data: null }
+
+  revalidatePath('/calendar')
+  revalidatePath('/closet')
+  revalidatePath('/insights')
+  return { success: true, error: null, item: updatedItem || undefined }
+}
+
 export async function getOutfitsForDate(date: string): Promise<CalendarOutfitWithItem[]> {
   const supabase = await createClient()
   

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { motion } from 'motion/react'
+import Image from 'next/image'
 import {
   format,
   startOfMonth,
@@ -15,7 +16,7 @@ import {
   isSameDay,
   isToday,
 } from 'date-fns'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CalendarDay } from './calendar-day'
 import { ScheduledOutfitPicker } from './scheduled-outfit-picker'
@@ -36,7 +37,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 export function CalendarView({ outfits, savedOutfits, clothingItems, initialItemId }: Readonly<CalendarViewProps>) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [calendarOutfits, setCalendarOutfits] = useState(outfits)
-  const [selectedDate, setSelectedDate] = useState<Date | null>(() => initialItemId ? new Date() : null)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => new Date())
   const [isPickerOpen, setIsPickerOpen] = useState(Boolean(initialItemId))
   const { toast } = useToast()
 
@@ -90,7 +91,6 @@ export function CalendarView({ outfits, savedOutfits, clothingItems, initialItem
 
   const handleDayClick = useCallback((date: Date) => {
     setSelectedDate(date)
-    setIsPickerOpen(true)
   }, [])
 
   const handleScheduleOutfit = useCallback(async (input: { itemIds: string[]; name: string; sourceOutfitId?: string | null }) => {
@@ -171,6 +171,8 @@ export function CalendarView({ outfits, savedOutfits, clothingItems, initialItem
     return true
   }, [calendarOutfits, toast])
 
+  const selectedOutfits = selectedDate ? outfitsByDate.get(formatDateForDB(selectedDate)) || [] : []
+
   return (
     <div className="space-y-4 px-4">
       {/* Header */}
@@ -187,43 +189,63 @@ export function CalendarView({ outfits, savedOutfits, clothingItems, initialItem
           <Button variant="outline" size="sm" onClick={handleToday}>
             Today
           </Button>
-          <Button variant="outline" size="icon" onClick={handlePrevMonth}>
+          <Button variant="outline" size="icon" onClick={handlePrevMonth} aria-label="Previous month">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" onClick={handleNextMonth}>
+          <Button variant="outline" size="icon" onClick={handleNextMonth} aria-label="Next month">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-1">
-        {WEEKDAYS.map((day) => (
-          <div
-            key={day}
-            className="text-center text-sm font-medium text-zinc-500 py-2"
-          >
-            {day}
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-6">
+        <div>
+          <div className="grid grid-cols-7 gap-1">
+            {WEEKDAYS.map((day) => <div key={day} className="py-2 text-center text-sm font-medium text-zinc-500">{day}</div>)}
           </div>
-        ))}
-      </div>
+          <motion.div
+            key={format(currentMonth, 'MMM-yyyy')}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid grid-cols-7 gap-1"
+          >
+            {calendarDays.map((day) => (
+              <CalendarDay key={day.dateString} day={day} isSelected={selectedDate ? isSameDay(day.date, selectedDate) : false} onClick={() => handleDayClick(day.date)} />
+            ))}
+          </motion.div>
+        </div>
 
-      {/* Calendar grid */}
-      <motion.div
-        key={format(currentMonth, 'MMM-yyyy')}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="grid grid-cols-7 gap-1"
-      >
-        {calendarDays.map((day) => (
-          <CalendarDay
-            key={day.dateString}
-            day={day}
-            isSelected={selectedDate ? isSameDay(day.date, selectedDate) : false}
-            onClick={() => handleDayClick(day.date)}
-          />
-        ))}
-      </motion.div>
+        {selectedDate && (
+          <section className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0" aria-label={`Agenda for ${format(selectedDate, 'MMMM d')}`}>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold">{format(selectedDate, 'EEEE, MMM d')}</h3>
+                <p className="text-sm text-zinc-500">{selectedOutfits.length} outfit{selectedOutfits.length === 1 ? '' : 's'} planned</p>
+              </div>
+              <Button size="sm" onClick={() => setIsPickerOpen(true)}><Plus className="mr-1 h-4 w-4" />Plan</Button>
+            </div>
+            <div className="mt-3 space-y-2">
+              {selectedOutfits.length === 0 ? (
+                <p className="py-4 text-sm text-zinc-500">Nothing planned yet.</p>
+              ) : selectedOutfits.map((outfit) => (
+                <article key={outfit.id} className="flex items-center gap-3 rounded-lg border border-zinc-200 p-2 dark:border-zinc-800">
+                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-zinc-100 dark:bg-zinc-800">
+                    {outfit.items[0] && <Image src={outfit.items[0].image_url} alt={outfit.items[0].name} fill className="object-cover" sizes="48px" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{outfit.name}</p>
+                    <p className="text-xs capitalize text-zinc-500">{outfit.status}{outfit.occasion ? ` · ${outfit.occasion}` : ''}</p>
+                  </div>
+                  <div className="flex shrink-0">
+                    {outfit.status === 'planned' && <Button size="icon" variant="ghost" aria-label={`Mark ${outfit.name} as worn`} onClick={() => void handleMarkWorn(outfit.id)}><Check className="h-4 w-4 text-emerald-600" /></Button>}
+                    <Button size="icon" variant="ghost" aria-label={`Remove ${outfit.name}`} onClick={() => void handleRemoveOutfit(outfit.id)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
 
       {/* Outfit picker dialog */}
       <ScheduledOutfitPicker
@@ -232,7 +254,7 @@ export function CalendarView({ outfits, savedOutfits, clothingItems, initialItem
         selectedDate={selectedDate}
         clothingItems={clothingItems}
         savedOutfits={savedOutfits}
-        scheduledOutfits={selectedDate ? outfitsByDate.get(formatDateForDB(selectedDate)) || [] : []}
+        scheduledOutfits={selectedOutfits}
         onSchedule={handleScheduleOutfit}
         onRemove={handleRemoveOutfit}
         onMarkWorn={handleMarkWorn}

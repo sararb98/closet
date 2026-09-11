@@ -2,14 +2,16 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Check, Plus, Trash2 } from 'lucide-react'
+import { BookmarkPlus, Check, Plus, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { OutfitCard } from '@/components/outfits/outfit-card'
-import { ClothingItemWithTags, OutfitWithItems, ScheduledOutfitWithItems } from '@/types'
+import { ClothingItemWithTags, OutfitOccasion, OutfitWithItems, ScheduledOutfitWithItems } from '@/types'
 import { cn } from '@/lib/utils'
+import { createOutfit } from '@/lib/actions/outfits'
+import { useToast } from '@/hooks/use-toast'
 
 interface ScheduledOutfitPickerProps {
   open: boolean
@@ -41,6 +43,8 @@ export function ScheduledOutfitPicker({
   const [variationItemIds, setVariationItemIds] = useState<string[]>(initialItemId ? [initialItemId] : [])
   const [isSaving, setIsSaving] = useState(false)
   const [activeTab, setActiveTab] = useState<'saved' | 'variation'>(initialItemId ? 'variation' : 'saved')
+  const [savedScheduleIds, setSavedScheduleIds] = useState<string[]>([])
+  const { toast } = useToast()
 
   if (!selectedDate) return null
 
@@ -85,11 +89,27 @@ export function ScheduledOutfitPicker({
     setIsSaving(false)
   }
 
+  const saveScheduledOutfit = async (outfit: ScheduledOutfitWithItems) => {
+    const result = await createOutfit({
+      name: outfit.name,
+      itemIds: outfit.items.map((item) => item.id),
+      season: outfit.season,
+      occasion: outfit.occasion as OutfitOccasion | null,
+    })
+    if (!result.success) {
+      toast({ title: 'Error', description: result.error || 'Failed to save outfit', variant: 'destructive' })
+      return
+    }
+    setSavedScheduleIds((current) => [...current, outfit.id])
+    toast({ title: 'Outfit saved', description: 'Available in your outfit library.' })
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[calc(100dvh-2rem)] max-h-[44rem] max-w-5xl flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle>Plan outfits for {format(selectedDate, 'EEEE, MMMM d')}</DialogTitle>
+          <DialogDescription>Choose saved outfits or build a custom variation for this day.</DialogDescription>
         </DialogHeader>
 
         {scheduledOutfits.length > 0 && (
@@ -100,6 +120,7 @@ export function ScheduledOutfitPicker({
                 <div key={outfit.id} className="relative w-24 shrink-0">
                   <OutfitCard outfit={outfit} variant="compact" />
                   <div className="absolute right-1 top-1 flex gap-1 bg-white/90 dark:bg-zinc-950/90">
+                    {!savedScheduleIds.includes(outfit.id) && <Button size="icon" variant="ghost" aria-label={`Save ${outfit.name} to outfits`} onClick={() => void saveScheduledOutfit(outfit)}><BookmarkPlus className="h-4 w-4" /></Button>}
                     {outfit.status === 'planned' && <Button size="icon" variant="ghost" aria-label={`Mark ${outfit.name} as worn`} onClick={() => void onMarkWorn(outfit.id)}><Check className="h-4 w-4 text-emerald-600" /></Button>}
                     <Button size="icon" variant="ghost" aria-label={`Remove ${outfit.name}`} onClick={() => void onRemove(outfit.id)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
                   </div>

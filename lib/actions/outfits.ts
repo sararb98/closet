@@ -45,7 +45,7 @@ export async function createOutfit(input: {
   itemIds: string[]
   season: string[]
   occasion: OutfitOccasion | null
-}): Promise<{ success: boolean; error: string | null }> {
+}): Promise<{ success: boolean; error: string | null; outfit?: Outfit }> {
   const name = input.name.trim()
   const itemIds = [...new Set(input.itemIds)]
   if (!name) return { success: false, error: 'Enter an outfit name' }
@@ -83,7 +83,7 @@ export async function createOutfit(input: {
 
   revalidatePath('/outfits')
   revalidatePath('/closet')
-  return { success: true, error: null }
+  return { success: true, error: null, outfit }
 }
 
 export async function deleteOutfit(outfitId: string): Promise<{ success: boolean; error: string | null }> {

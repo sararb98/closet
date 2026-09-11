@@ -14,7 +14,7 @@ export function AppShell({ children, user }: AppShellProps) {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-900">
       <Header user={user} />
-      <main className="pb-24 pt-4">
+      <main className="pb-24 pt-4 md:pb-4">
         {children}
       </main>
       <NavTabs />

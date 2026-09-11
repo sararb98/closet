@@ -85,7 +85,7 @@ export function ArchivedItemsButton() {
         onClick={() => handleOpenChange(true)}
         title="Archived items"
         aria-label="Archived items"
-        className="h-8 w-8 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 dark:text-zinc-600 dark:hover:text-zinc-300 dark:hover:bg-zinc-800"
+        className="h-11 w-11 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 dark:text-zinc-600 dark:hover:text-zinc-300 dark:hover:bg-zinc-800 sm:h-8 sm:w-8"
       >
         <Archive className="h-4 w-4" />
       </Button>

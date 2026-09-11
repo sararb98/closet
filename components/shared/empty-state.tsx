@@ -14,6 +14,7 @@ export interface EmptyStateProps {
   description?: string
   actionLabel?: string
   actionHref?: string
+  onAction?: () => void
 }
 
 const emptyStates = {
@@ -56,8 +57,9 @@ export function EmptyState({
   title,
   description,
   actionLabel,
-  actionHref
-}: EmptyStateProps) {
+  actionHref,
+  onAction,
+}: Readonly<EmptyStateProps>) {
   const state = type ? emptyStates[type] : null
   const iconKey = icon || state?.icon || 'shirt'
   const Icon = iconMap[iconKey]
@@ -77,7 +79,10 @@ export function EmptyState({
       <p className="text-zinc-500 dark:text-zinc-400 max-w-sm mb-6">
         {description || state?.description || 'No data to display.'}
       </p>
-      {(actionHref || state?.action) && (
+      {onAction && (
+        <Button onClick={onAction}>Clear filters</Button>
+      )}
+      {!onAction && (actionHref || state?.action) && (
         <Button asChild>
           <Link href={actionHref || state?.action?.href || '/'}>
             <Plus className="mr-2 h-4 w-4" />

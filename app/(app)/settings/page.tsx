@@ -31,33 +31,6 @@ export default async function SettingsPage() {
         <div className="max-w-2xl mx-auto space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Preferences</CardTitle>
-              <CardDescription>
-                Manage your preferences and application settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
-                <h3 className="font-medium text-zinc-900 dark:text-zinc-100">
-                  Theme
-                </h3>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-                  Theme settings coming soon
-                </p>
-              </div>
-              <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
-                <h3 className="font-medium text-zinc-900 dark:text-zinc-100">
-                  Notifications
-                </h3>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-                  Notification settings coming soon
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle>Privacy & Security</CardTitle>
               <CardDescription>
                 Manage your privacy and security settings

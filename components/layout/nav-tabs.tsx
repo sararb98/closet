@@ -18,7 +18,7 @@ export function NavTabs() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 safe-area-pb">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-lg border-t border-zinc-200 dark:border-zinc-800 safe-area-pb md:hidden">
       <div className="flex items-center justify-around max-w-lg mx-auto px-4">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href)

@@ -3,8 +3,11 @@ import { getCalendarOutfits } from '@/lib/actions/calendar'
 import { getClothingItems } from '@/lib/actions/clothing'
 import { getOutfits } from '@/lib/actions/outfits'
 import { CalendarView } from '@/components/calendar/calendar-view'
+import { WeatherSuggestions } from '@/components/calendar/weather-suggestions'
 import { LoadingCalendar } from '@/components/shared/loading'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 interface CalendarPageProps {
   searchParams: Promise<{
@@ -31,16 +34,17 @@ export default async function CalendarPage({ searchParams }: Readonly<CalendarPa
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
-        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+      <div className="flex items-center justify-between gap-4 p-4 border-b border-zinc-200 dark:border-zinc-800">
+        <div><h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
           Outfit Calendar
         </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
           Plan what to wear each day
-        </p>
+        </p></div><Button variant="outline" size="sm" asChild><Link href="/capsules">Plan a trip</Link></Button>
       </div>
 
       <Suspense fallback={<LoadingCalendar />}>
+        <WeatherSuggestions items={items} />
         <CalendarView
           outfits={outfits}
           savedOutfits={savedOutfits}

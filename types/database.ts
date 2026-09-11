@@ -29,6 +29,7 @@ export type Database = {
           notes: string | null
           is_favorite: boolean
           archived: boolean
+          availability_status: 'clean' | 'laundry' | 'packed'
           wear_count: number
           last_worn_date: string | null
           created_at: string
@@ -51,6 +52,7 @@ export type Database = {
           notes?: string | null
           is_favorite?: boolean
           archived?: boolean
+          availability_status?: 'clean' | 'laundry' | 'packed'
           wear_count?: number
           last_worn_date?: string | null
           created_at?: string
@@ -73,10 +75,65 @@ export type Database = {
           notes?: string | null
           is_favorite?: boolean
           archived?: boolean
+          availability_status?: 'clean' | 'laundry' | 'packed'
           wear_count?: number
           last_worn_date?: string | null
           created_at?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      capsules: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          start_date: string
+          end_date: string
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          start_date: string
+          end_date: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          start_date?: string
+          end_date?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      capsule_items: {
+        Row: {
+          id: string
+          capsule_id: string
+          item_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          capsule_id: string
+          item_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          capsule_id?: string
+          item_id?: string
+          created_at?: string
         }
         Relationships: []
       }
@@ -334,6 +391,8 @@ export type UpdateTables<T extends keyof Database['public']['Tables']> = Databas
 
 // Convenience aliases
 export type ClothingItem = Tables<'clothing_items'>
+export type Capsule = Tables<'capsules'>
+export type CapsuleItem = Tables<'capsule_items'>
 export type ClothingTag = Tables<'clothing_tags'>
 export type ItemTag = Tables<'item_tags'>
 export type CalendarOutfit = Tables<'calendar_outfits'>
@@ -344,6 +403,7 @@ export type OutfitItem = Tables<'outfit_items'>
 export type UserPreferences = Tables<'user_preferences'>
 
 export type NewClothingItem = InsertTables<'clothing_items'>
+export type NewCapsule = InsertTables<'capsules'>
 export type UpdateClothingItem = UpdateTables<'clothing_items'>
 export type NewCalendarOutfit = InsertTables<'calendar_outfits'>
 export type NewCalendarOutfitInstance = InsertTables<'calendar_outfit_instances'>

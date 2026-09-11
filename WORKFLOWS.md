@@ -29,11 +29,12 @@ Check: upload, edit, archive, and restore one item; ensure it appears only in th
 
 ## Saved Outfits
 
-1. A saved outfit is a named reusable combination of two or more clothing items, with optional season and occasion metadata.
-2. The Outfits page presents image-only two-by-two collages, with season/occasion badges and a delete control.
-3. Saved outfit names are not visible in cards but remain available to assistive technology and destructive-action labels.
+1. Use **Create outfit** on the Outfits page to select two or more item images, provide an internal name, and optionally choose season and occasion metadata.
+2. A saved outfit is a named reusable combination of two or more clothing items, with optional season and occasion metadata.
+3. The Outfits page presents image-only two-by-two collages, with season/occasion badges and a delete control.
+4. Saved outfit names are not visible in cards but remain available to assistive technology and destructive-action labels.
 
-Check: verify collage slot ordering (top, accessories, bottoms, shoes), responsive card sizing, filter behavior, and deletion recovery on server failure.
+Check: create an outfit from the Outfits page, confirm it appears immediately, refresh, and confirm it persists. Verify collage slot ordering (top, accessories, bottoms, shoes), responsive card sizing, filter behavior, and deletion recovery on server failure.
 
 ## Calendar: Schedule Saved Outfits
 
@@ -51,8 +52,9 @@ Check: add two saved outfits to one empty day, refresh the page, confirm both pe
 3. A selected source preselects its items. Add or remove item images using their checkboxes.
 4. Choose the fixed **Add variation** footer action to create an independent calendar snapshot.
 5. Entries based on a saved outfit show the visible source-link indicator but never change the saved template.
+6. Use the save icon on any scheduled outfit to copy its current item snapshot into the reusable Outfits library. A saved calendar variation becomes a new independent saved outfit.
 
-Check: select a source outfit, remove one item, add the variation, reload, and confirm the calendar copy has the changed item set while the saved outfit retains its original items.
+Check: select a source outfit, remove one item, add the variation, save it from the scheduled row, and confirm the saved copy has the changed item set while the original saved outfit retains its original items.
 
 ## Calendar: Planned and Worn States
 

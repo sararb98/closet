@@ -55,6 +55,34 @@ interface StatsRow {
   is_favorite: boolean
 }
 
+export interface WardrobeValueInsights {
+  averageCostPerWear: number | null
+  trackedValue: number
+  unpricedItems: number
+  gaps: string[]
+  overrepresented: string | null
+}
+
+export async function getWardrobeValueInsights(): Promise<WardrobeValueInsights | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data, error } = await supabase.from('clothing_items').select('type, purchase_price, wear_count').eq('user_id', user.id).eq('archived', false)
+  if (error) return null
+  const items = data || []
+  const pricedItems = items.filter((item) => item.purchase_price !== null)
+  const totalWearCost = pricedItems.reduce((sum, item) => sum + Number(item.purchase_price) / Math.max(item.wear_count, 1), 0)
+  const counts = items.reduce<Record<string, number>>((result, item) => ({ ...result, [item.type]: (result[item.type] || 0) + 1 }), {})
+  const entries = Object.entries(counts).sort((left, right) => right[1] - left[1])
+  return {
+    averageCostPerWear: pricedItems.length ? Math.round((totalWearCost / pricedItems.length) * 100) / 100 : null,
+    trackedValue: pricedItems.reduce((sum, item) => sum + Number(item.purchase_price), 0),
+    unpricedItems: items.length - pricedItems.length,
+    gaps: entries.filter(([, count]) => count === 1).map(([type]) => type).slice(0, 3),
+    overrepresented: entries[0] && entries[0][1] / Math.max(items.length, 1) >= 0.4 ? entries[0][0] : null,
+  }
+}
+
 export async function getMostWornItems(limit: number = 10): Promise<MostWornItem[]> {
   const supabase = await createClient()
   

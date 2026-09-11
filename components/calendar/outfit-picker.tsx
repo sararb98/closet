@@ -8,6 +8,7 @@ import { Search, X, Check, Plus, BookmarkPlus } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -41,7 +42,7 @@ export function OutfitPicker({
   onAddOutfit,
   onRemoveOutfit,
   initialItemId,
-}: OutfitPickerProps) {
+}: Readonly<OutfitPickerProps>) {
   const [search, setSearch] = useState('')
   const [selectedType, setSelectedType] = useState<string>('all')
   const [outfitName, setOutfitName] = useState('')
@@ -127,6 +128,7 @@ export function OutfitPicker({
             <span>Plan outfit for</span>
             <Badge variant="secondary">{format(selectedDate, 'EEEE, MMMM d')}</Badge>
           </DialogTitle>
+          <DialogDescription>Add clothing items to this day, then optionally save them as an outfit.</DialogDescription>
         </DialogHeader>
 
         {/* Currently selected items */}

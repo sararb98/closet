@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { LogOut, Settings, User, Sparkles } from 'lucide-react'
+import { BarChart3, Calendar, Layers, LogOut, Plus, Settings, Shirt, Sparkles, User } from 'lucide-react'
 import { getInitials } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -20,22 +20,42 @@ interface HeaderProps {
   user?: SupabaseUser
 }
 
-export function Header({ user: propUser }: HeaderProps) {
+const navigationItems = [
+  { href: '/closet', label: 'Closet', icon: Shirt },
+  { href: '/calendar', label: 'Calendar', icon: Calendar },
+  { href: '/outfits', label: 'Outfits', icon: Layers },
+  { href: '/add', label: 'Add', icon: Plus },
+  { href: '/insights', label: 'Insights', icon: BarChart3 },
+]
+
+export function Header({ user: propUser }: Readonly<HeaderProps>) {
   const { user: authUser, signOut } = useAuth()
   const user = propUser || authUser
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-zinc-950/80 backdrop-blur-lg border-b border-zinc-200 dark:border-zinc-800">
-      <div className="flex h-14 items-center justify-between px-4 max-w-7xl mx-auto">
+      <div className="flex h-14 items-center gap-6 px-4 max-w-7xl mx-auto">
         <div className="flex items-center gap-2">
           <Sparkles className="h-6 w-6 text-pink-500" />
           <h1 className="text-lg font-bold">Virtual Closet</h1>
         </div>
 
+        <nav aria-label="Primary" className="hidden flex-1 items-center justify-center gap-1 md:flex">
+          {navigationItems.map((item) => {
+            const Icon = item.icon
+            return (
+              <Link key={item.href} href={item.href} className="flex h-9 items-center gap-2 rounded-md px-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-50">
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </nav>
+
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full" aria-label="Open account menu">
                 <Avatar className="h-9 w-9">
                   <AvatarFallback className="bg-zinc-100 dark:bg-zinc-800">
                     {getInitials(user.email || 'U')}

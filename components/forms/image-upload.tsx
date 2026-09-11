@@ -13,11 +13,12 @@ interface ImageUploadProps {
   value?: string
   onChange: (url: string, file?: File) => void
   disabled?: boolean
+  compact?: boolean
   /** When provided, shows an eyedropper button that samples an exact color from the photo. */
   onColorPick?: (hex: string) => void
 }
 
-export function ImageUpload({ value, onChange, disabled, onColorPick }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, disabled, compact = false, onColorPick }: Readonly<ImageUploadProps>) {
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -149,7 +150,8 @@ export function ImageUpload({ value, onChange, disabled, onColorPick }: ImageUpl
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className={cn(
-              'relative aspect-square rounded-xl border-2 border-dashed transition-colors cursor-pointer',
+              'relative rounded-xl border-2 border-dashed transition-colors cursor-pointer',
+              compact ? 'h-60' : 'aspect-square',
               isDragging
                 ? 'border-zinc-900 bg-zinc-100 dark:border-zinc-100 dark:bg-zinc-800'
                 : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600',

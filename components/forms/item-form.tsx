@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'motion/react'
-import { Loader2, Save, ArrowLeft } from 'lucide-react'
+import { Loader2, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -37,6 +37,7 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
   const { toast } = useToast()
   const { user } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
 
   // Form state
@@ -77,20 +78,25 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError(null)
     
     if (!formData.name || !formData.type || (!formData.image_url && !imageFile)) {
+      const message = 'Please fill in the name, type, and upload an image.'
+      setFormError(message)
       toast({
         title: 'Missing required fields',
-        description: 'Please fill in the name, type, and upload an image.',
+        description: message,
         variant: 'destructive',
       })
       return
     }
 
     if (!user) {
+      const message = 'Please sign in to add items.'
+      setFormError(message)
       toast({
         title: 'Not authenticated',
-        description: 'Please sign in to add items.',
+        description: message,
         variant: 'destructive',
       })
       return
@@ -147,9 +153,11 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
         router.push('/closet')
       }
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Something went wrong'
+      setFormError(message)
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Something went wrong',
+        description: message,
         variant: 'destructive',
       })
     } finally {
@@ -161,37 +169,25 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-2xl mx-auto px-4"
+      className="mx-auto max-w-4xl"
     >
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold">
-          {isEditing ? 'Edit Item' : 'Add New Item'}
-        </h1>
-      </div>
-
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Image Upload */}
+        {formError && <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/50 dark:text-red-300">{formError}</p>}
+        {/* Essentials */}
         <Card>
-          <CardContent className="p-6">
-            <Label className="text-base font-medium mb-4 block">Photo *</Label>
-            <ImageUpload
-              value={formData.image_url}
-              onChange={handleImageChange}
-              onColorPick={handleColorPick}
-              disabled={isSubmitting}
-            />
-            <p className="text-xs text-zinc-500 mt-2">
-              Tip: use the color dropper on the photo to grab the item&apos;s exact color.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Basic Info */}
-        <Card>
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="grid gap-6 p-6 md:grid-cols-[240px_1fr]">
+            <div>
+              <Label className="mb-4 block text-base font-medium">Photo *</Label>
+              <ImageUpload
+                value={formData.image_url}
+                onChange={handleImageChange}
+                onColorPick={handleColorPick}
+                disabled={isSubmitting}
+                compact
+              />
+              <p className="mt-2 text-xs text-zinc-500">Use the color dropper on the photo to grab the item&apos;s exact color.</p>
+            </div>
+            <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Name *</Label>
               <Input
@@ -237,13 +233,14 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
                 rows={3}
               />
             </div>
+            </div>
           </CardContent>
         </Card>
 
         {/* Attributes */}
-        <Card>
-          <CardContent className="p-6 space-y-4">
-            <h3 className="font-medium">Attributes</h3>
+        <details className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+          <summary className="cursor-pointer px-6 py-4 text-sm font-medium">Color and seasonal details</summary>
+          <CardContent className="space-y-4 border-t p-6">
 
             {/* Season */}
             <div className="space-y-2">
@@ -359,11 +356,12 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </details>
 
         {/* Notes */}
-        <Card>
-          <CardContent className="p-6 space-y-4">
+        <details className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+          <summary className="cursor-pointer px-6 py-4 text-sm font-medium">More details</summary>
+          <CardContent className="space-y-4 border-t p-6">
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
@@ -404,7 +402,7 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
               </Label>
             </div>
           </CardContent>
-        </Card>
+        </details>
 
         {/* Submit */}
         <div className="flex gap-4 pb-8">

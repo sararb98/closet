@@ -6,6 +6,7 @@ import {
   getColorDistribution,
   getMonthlyActivity,
   getClosetStats,
+  getWardrobeValueInsights,
 } from '@/lib/actions/insights'
 import { StatsCards } from '@/components/insights/stats-cards'
 import { MostWornChart } from '@/components/insights/most-worn-chart'
@@ -14,9 +15,12 @@ import { ColorChart } from '@/components/insights/color-chart'
 import { ActivityChart } from '@/components/insights/activity-chart'
 import { LoadingSpinner } from '@/components/shared/loading'
 import { EmptyState } from '@/components/shared/empty-state'
+import { ArrowRight, Calendar, CircleAlert } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import Link from 'next/link'
 
 export default async function InsightsPage() {
-  const [stats, mostWorn, seasonalUsage, typeDistribution, colorDistribution, monthlyActivity] =
+  const [stats, mostWorn, seasonalUsage, typeDistribution, colorDistribution, monthlyActivity, valueInsights] =
     await Promise.all([
       getClosetStats(),
       getMostWornItems(10),
@@ -24,6 +28,7 @@ export default async function InsightsPage() {
       getTypeDistribution(),
       getColorDistribution(),
       getMonthlyActivity(),
+      getWardrobeValueInsights(),
     ])
 
   const hasData = stats && stats.totalItems > 0
@@ -51,6 +56,31 @@ export default async function InsightsPage() {
             />
           ) : stats && (
             <div className="p-4 space-y-6">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Link href="/closet?filter=never-worn" className="block">
+                  <Card className="h-full transition-colors hover:border-zinc-400">
+                    <CardContent className="flex items-center gap-3 p-4">
+                      <CircleAlert className="h-5 w-5 text-amber-600" />
+                      <div className="min-w-0 flex-1"><p className="font-medium">{stats.neverWorn} never worn</p><p className="text-sm text-zinc-500">Review items ready for a first wear.</p></div>
+                      <ArrowRight className="h-4 w-4" />
+                    </CardContent>
+                  </Card>
+                </Link>
+                <Link href="/calendar" className="block">
+                  <Card className="h-full transition-colors hover:border-zinc-400">
+                    <CardContent className="flex items-center gap-3 p-4">
+                      <Calendar className="h-5 w-5 text-emerald-600" />
+                      <div className="min-w-0 flex-1"><p className="font-medium">Plan your next outfit</p><p className="text-sm text-zinc-500">Open the calendar to see your schedule.</p></div>
+                      <ArrowRight className="h-4 w-4" />
+                    </CardContent>
+                  </Card>
+                </Link>
+              </div>
+              {valueInsights && <div className="grid gap-3 sm:grid-cols-3">
+                <Card><CardContent className="p-4"><p className="text-sm text-zinc-500">Average cost per wear</p><p className="mt-1 text-2xl font-semibold">{valueInsights.averageCostPerWear === null ? 'Add prices' : `$${valueInsights.averageCostPerWear.toFixed(2)}`}</p><p className="mt-1 text-xs text-zinc-500">${valueInsights.trackedValue.toFixed(2)} tracked across your closet.</p></CardContent></Card>
+                <Card><CardContent className="p-4"><p className="text-sm text-zinc-500">Category gaps</p><p className="mt-1 font-medium capitalize">{valueInsights.gaps.length ? valueInsights.gaps.join(', ') : 'Well balanced'}</p><p className="mt-1 text-xs text-zinc-500">Types with only one item need a backup.</p></CardContent></Card>
+                <Card><CardContent className="p-4"><p className="text-sm text-zinc-500">Closet balance</p><p className="mt-1 font-medium capitalize">{valueInsights.overrepresented ? `${valueInsights.overrepresented} heavy` : 'No dominant type'}</p><p className="mt-1 text-xs text-zinc-500">{valueInsights.unpricedItems} items have no purchase price.</p></CardContent></Card>
+              </div>}
               <StatsCards stats={stats} />
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

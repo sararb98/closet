@@ -198,6 +198,27 @@ export async function toggleFavorite(
   return { success: true, error: null }
 }
 
+export async function setClothingAvailability(
+  id: string,
+  availabilityStatus: 'clean' | 'laundry' | 'packed'
+): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const { error } = await supabase
+    .from('clothing_items')
+    .update({ availability_status: availabilityStatus })
+    .eq('id', id)
+    .eq('user_id', user.id)
+  if (error) return { success: false, error: error.message }
+
+  revalidatePath('/closet')
+  revalidatePath('/calendar')
+  revalidatePath('/capsules')
+  return { success: true, error: null }
+}
+
 export async function setClothingItemsArchived(
   ids: string[],
   archived: boolean

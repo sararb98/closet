@@ -72,38 +72,40 @@ export function ClothingFiltersComponent({
   return (
     <div className="space-y-4">
       {/* Search and controls */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
           <Input
             placeholder="Search items..."
             value={filters.search}
             onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-            className="pl-10"
+            className="h-11 pl-10 sm:h-10"
           />
           {filters.search && (
             <button
               onClick={() => onFiltersChange({ ...filters, search: '' })}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+              aria-label="Clear search"
             >
               <X className="h-4 w-4" />
             </button>
           )}
         </div>
 
-        {/* Filter button */}
-        <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:items-center">
+          {/* Filter button */}
+          <Popover open={isOpen} onOpenChange={setIsOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="gap-2">
+              <Button variant="outline" className="h-11 gap-2 sm:h-10" aria-label="Filter items">
               <SlidersHorizontal className="h-4 w-4" />
-              <span className="hidden sm:inline">Filters</span>
+                <span>Filters</span>
               {activeFilterCount > 0 && (
                 <Badge variant="secondary" className="ml-1 px-1.5 min-w-5 h-5">
                   {activeFilterCount}
                 </Badge>
               )}
             </Button>
-          </PopoverTrigger>
+            </PopoverTrigger>
           <PopoverContent className="w-80" align="end">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -232,13 +234,13 @@ export function ClothingFiltersComponent({
               </div>
             </div>
           </PopoverContent>
-        </Popover>
+          </Popover>
 
-        {/* Sort */}
-        <Select value={sortBy} onValueChange={(value) => onSortChange(value as SortOption)}>
-          <SelectTrigger className="w-[140px]">
+          {/* Sort */}
+          <Select value={sortBy} onValueChange={(value) => onSortChange(value as SortOption)}>
+            <SelectTrigger className="h-11 w-full sm:h-10 sm:w-[140px]" aria-label="Sort items">
             <SelectValue />
-          </SelectTrigger>
+            </SelectTrigger>
           <SelectContent>
             {SORT_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
@@ -246,33 +248,32 @@ export function ClothingFiltersComponent({
               </SelectItem>
             ))}
           </SelectContent>
-        </Select>
+          </Select>
 
-        {/* Multi-select toggle */}
-        {onToggleSelectMode && (
-          <Button
-            variant={selectMode ? 'secondary' : 'outline'}
-            className="gap-2 shrink-0"
-            onClick={onToggleSelectMode}
-          >
-            <ListChecks className="h-4 w-4" />
-            <span className="hidden sm:inline">{selectMode ? 'Cancel' : 'Select'}</span>
-          </Button>
-        )}
+          {/* Multi-select toggle */}
+          {onToggleSelectMode && (
+            <Button
+              variant={selectMode ? 'secondary' : 'outline'}
+              className="h-11 shrink-0 gap-2 sm:h-10"
+              onClick={onToggleSelectMode}
+            >
+              <ListChecks className="h-4 w-4" />
+              <span>{selectMode ? 'Cancel' : 'Select'}</span>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Active filters display */}
       <AnimatePresence>
-        {activeFilterCount > 0 && (
+        {(activeFilterCount > 0 || filters.search) && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className="flex flex-wrap items-center gap-2"
           >
-            <span className="text-sm text-zinc-500">
-              {filteredCount} of {totalCount} items
-            </span>
+            <span className="text-sm text-zinc-500">{filteredCount} of {totalCount} items</span>
             {filters.type && (
               <Badge variant="secondary" className="gap-1">
                 {CLOTHING_TYPES.find((t) => t.value === filters.type)?.label}

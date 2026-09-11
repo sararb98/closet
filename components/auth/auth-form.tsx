@@ -29,7 +29,7 @@ const descriptions: Record<SubMode, (mode: AuthMode) => string> = {
   'forgot-password': () => "Enter your email and we'll send a reset link",
 }
 
-export function AuthForm({ mode }: AuthFormProps) {
+export function AuthForm({ mode }: Readonly<AuthFormProps>) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -39,6 +39,10 @@ export function AuthForm({ mode }: AuthFormProps) {
   const [message, setMessage] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
+  let passwordSubmitLabel = mode === 'login' ? 'Sign In' : 'Sign Up'
+  if (loading) {
+    passwordSubmitLabel = mode === 'login' ? 'Signing in...' : 'Creating account...'
+  }
 
   const clearAlerts = () => { setError(null); setMessage(null) }
   const switchTo = (next: SubMode) => { clearAlerts(); setSubMode(next) }
@@ -142,6 +146,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
           className="text-sm text-red-500 bg-red-50 dark:bg-red-950/50 p-3 rounded-md"
+          role="alert"
         >
           {error}
         </motion.div>
@@ -153,6 +158,7 @@ export function AuthForm({ mode }: AuthFormProps) {
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
           className="text-sm text-green-600 bg-green-50 dark:bg-green-950/50 p-3 rounded-md"
+          aria-live="polite"
         >
           {message}
         </motion.div>
@@ -209,6 +215,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -219,7 +226,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               <CardFooter className="flex flex-col gap-3">
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {mode === 'login' ? 'Sign In' : 'Sign Up'}
+                  {passwordSubmitLabel}
                 </Button>
                 <div className="flex w-full items-center justify-between text-sm">
                   <button
@@ -268,7 +275,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               <CardFooter className="flex flex-col gap-3">
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Send magic link
+                  {loading ? 'Sending magic link...' : 'Send magic link'}
                 </Button>
                 <button
                   type="button"
@@ -306,7 +313,7 @@ export function AuthForm({ mode }: AuthFormProps) {
               <CardFooter className="flex flex-col gap-3">
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Send reset link
+                  {loading ? 'Sending reset link...' : 'Send reset link'}
                 </Button>
                 <button
                   type="button"

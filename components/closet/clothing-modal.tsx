@@ -2,10 +2,11 @@
 
 import Image from 'next/image'
 import { motion } from 'motion/react'
-import { Heart, Pencil, Trash2, Tag } from 'lucide-react'
+import { Check, Heart, PackageCheck, Pencil, Trash2, Tag } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -21,6 +22,9 @@ interface ClothingModalProps {
   onOpenChange: (open: boolean) => void
   onEdit?: () => void
   onDelete?: () => void
+  onWearToday?: () => void
+  isLoggingWear?: boolean
+  onAvailabilityChange?: (status: 'clean' | 'laundry' | 'packed') => void
 }
 
 export function ClothingModal({
@@ -29,7 +33,10 @@ export function ClothingModal({
   onOpenChange,
   onEdit,
   onDelete,
-}: ClothingModalProps) {
+  onWearToday,
+  isLoggingWear = false,
+  onAvailabilityChange,
+}: Readonly<ClothingModalProps>) {
   if (!item) return null
 
   const typeInfo = CLOTHING_TYPES.find((t) => t.value === item.type)
@@ -68,6 +75,7 @@ export function ClothingModal({
             <div className="p-6 space-y-4">
               <DialogHeader className="space-y-1">
                 <DialogTitle className="text-xl">{item.name}</DialogTitle>
+                <DialogDescription className="sr-only">Details and actions for this clothing item.</DialogDescription>
                 <div className="flex items-center gap-2 text-sm text-zinc-500">
                   <span>{typeInfo?.icon}</span>
                   <span>{typeInfo?.label}</span>
@@ -105,6 +113,15 @@ export function ClothingModal({
                   </div>
                 )}
               </div>
+
+              {onAvailabilityChange && (
+                <div className="space-y-2">
+                  <p className="text-sm text-zinc-500">Availability</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(['clean', 'laundry', 'packed'] as const).map((status) => <Button key={status} type="button" size="sm" variant={item.availability_status === status ? 'secondary' : 'outline'} onClick={() => onAvailabilityChange(status)}>{status === 'clean' ? <PackageCheck className="mr-1 h-4 w-4" /> : null}{status[0].toUpperCase() + status.slice(1)}</Button>)}
+                  </div>
+                </div>
+              )}
 
               {/* Seasons */}
               {seasonInfo && seasonInfo.length > 0 && (
@@ -178,7 +195,13 @@ export function ClothingModal({
               )}
 
               {/* Actions */}
-              <div className="flex gap-2 pt-4">
+              <div className="flex flex-wrap gap-2 pt-4">
+                {onWearToday && (
+                  <Button onClick={onWearToday} disabled={isLoggingWear}>
+                    <Check className="mr-2 h-4 w-4" />
+                    {isLoggingWear ? 'Logging...' : 'Worn today'}
+                  </Button>
+                )}
                 <Button variant="outline" asChild>
                   <Link href={`/outfits?item=${item.id}`} onClick={(event) => event.stopPropagation()}>
                     Outfits

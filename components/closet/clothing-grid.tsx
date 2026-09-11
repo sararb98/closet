@@ -7,9 +7,11 @@ import { ClothingFiltersComponent } from './clothing-filters'
 import { ClothingModal } from './clothing-modal'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ClothingItemWithTags, ClothingFilters, SortOption, ClothingTag } from '@/types'
-import { deleteClothingItem, setClothingItemsArchived } from '@/lib/actions/clothing'
+import { deleteClothingItem, setClothingItemsArchived, setClothingAvailability } from '@/lib/actions/clothing'
+import { createQuickWearLog, undoQuickWearLog } from '@/lib/actions/calendar'
 import { useToast } from '@/hooks/use-toast'
 import { useRouter } from 'next/navigation'
+import { format } from 'date-fns'
 import {
   Dialog,
   DialogContent,
@@ -19,6 +21,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { ToastAction } from '@/components/ui/toast'
 import { Archive, Loader2 } from 'lucide-react'
 
 interface ClothingGridProps {
@@ -39,6 +42,7 @@ export function ClothingGrid({ items, tags }: ClothingGridProps) {
   const [selectedItem, setSelectedItem] = useState<ClothingItemWithTags | null>(null)
   const [itemToDelete, setItemToDelete] = useState<ClothingItemWithTags | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isLoggingWear, setIsLoggingWear] = useState(false)
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [isArchiving, setIsArchiving] = useState(false)
@@ -146,6 +150,49 @@ export function ClothingGrid({ items, tags }: ClothingGridProps) {
     router.push(`/add?edit=${item.id}`)
   }, [router])
 
+  const updateSelectedWearStats = useCallback((updatedItem: { id: string; wear_count: number; last_worn_date: string | null } | undefined) => {
+    if (!updatedItem) return
+    setSelectedItem((current) => current?.id === updatedItem.id ? { ...current, ...updatedItem } : current)
+  }, [])
+
+  const handleUndoWearLog = useCallback(async (logId: string) => {
+    const result = await undoQuickWearLog(logId)
+    if (!result.success) {
+      toast({ title: 'Could not undo wear log', description: result.error || 'Please try again.', variant: 'destructive' })
+      return
+    }
+    updateSelectedWearStats(result.item)
+    toast({ title: 'Wear log removed' })
+  }, [toast, updateSelectedWearStats])
+
+  const handleWearToday = useCallback(async () => {
+    if (!selectedItem) return
+    const item = selectedItem
+    setIsLoggingWear(true)
+    const result = await createQuickWearLog({ itemId: item.id, date: format(new Date(), 'yyyy-MM-dd') })
+    setIsLoggingWear(false)
+    if (!result.success || !result.logId) {
+      toast({ title: 'Could not log wear', description: result.error || 'Please try again.', variant: 'destructive' })
+      return
+    }
+    updateSelectedWearStats(result.item)
+    toast({
+      title: 'Marked worn today',
+      description: `Added ${item.name} to today’s wear log.`,
+      action: <ToastAction altText={`Undo wear log for ${item.name}`} onClick={() => void handleUndoWearLog(result.logId!)}>Undo</ToastAction>,
+    })
+  }, [handleUndoWearLog, selectedItem, toast, updateSelectedWearStats])
+
+  const handleAvailabilityChange = useCallback(async (availabilityStatus: 'clean' | 'laundry' | 'packed') => {
+    if (!selectedItem) return
+    const result = await setClothingAvailability(selectedItem.id, availabilityStatus)
+    if (!result.success) {
+      toast({ title: 'Could not update availability', description: result.error || 'Please try again.', variant: 'destructive' })
+      return
+    }
+    setSelectedItem((current) => current ? { ...current, availability_status: availabilityStatus } : current)
+  }, [selectedItem, toast])
+
   const toggleSelectMode = useCallback(() => {
     setSelectMode((prev) => !prev)
     setSelectedIds(new Set())
@@ -234,7 +281,7 @@ export function ClothingGrid({ items, tags }: ClothingGridProps) {
       </AnimatePresence>
 
       {sortedItems.length === 0 ? (
-        <EmptyState type="search" />
+        <EmptyState type="search" onAction={() => setFilters({ type: null, season: null, color: null, tags: [], search: '', favorites: false })} />
       ) : (
         <LayoutGroup>
           <motion.div 
@@ -272,6 +319,9 @@ export function ClothingGrid({ items, tags }: ClothingGridProps) {
             setSelectedItem(null)
           }
         }}
+        onWearToday={() => void handleWearToday()}
+        isLoggingWear={isLoggingWear}
+        onAvailabilityChange={(status) => void handleAvailabilityChange(status)}
       />
 
       {/* Delete confirmation dialog */}
