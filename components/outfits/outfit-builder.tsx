@@ -22,7 +22,6 @@ interface OutfitBuilderProps {
 export function OutfitBuilder({ clothingItems, onCreated, triggerClassName }: Readonly<OutfitBuilderProps>) {
   const [open, setOpen] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [name, setName] = useState('')
   const [season, setSeason] = useState<Season | 'none'>('none')
   const [occasion, setOccasion] = useState<OutfitOccasion | 'none'>('none')
   const [isSaving, setIsSaving] = useState(false)
@@ -49,7 +48,6 @@ export function OutfitBuilder({ clothingItems, onCreated, triggerClassName }: Re
     setOpen(nextOpen)
     if (!nextOpen) {
       setSelectedIds([])
-      setName('')
       setSeason('none')
       setOccasion('none')
       setSearch('')
@@ -61,7 +59,6 @@ export function OutfitBuilder({ clothingItems, onCreated, triggerClassName }: Re
   const handleCreate = async () => {
     setIsSaving(true)
     const result = await createOutfit({
-      name,
       itemIds: selectedIds,
       season: season === 'none' ? [] : [season],
       occasion: occasion === 'none' ? null : occasion,
@@ -84,8 +81,7 @@ export function OutfitBuilder({ clothingItems, onCreated, triggerClassName }: Re
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="flex h-[calc(100dvh-2rem)] max-h-[44rem] max-w-4xl flex-col overflow-hidden">
           <DialogHeader className="shrink-0"><DialogTitle>Create outfit</DialogTitle><DialogDescription>Choose at least two items, then save this combination to your outfit library.</DialogDescription></DialogHeader>
-          <div className="grid shrink-0 gap-3 sm:grid-cols-3">
-            <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="Outfit name" />
+          <div className="grid shrink-0 gap-3 sm:grid-cols-2">
             <Select value={season} onValueChange={(value) => setSeason(value as Season | 'none')}>
               <SelectTrigger><SelectValue placeholder="Season" /></SelectTrigger>
               <SelectContent><SelectItem value="none">Any season</SelectItem>{SEASONS.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
@@ -126,7 +122,7 @@ export function OutfitBuilder({ clothingItems, onCreated, triggerClassName }: Re
             </div>
             {matchingItems.length === 0 && <p className="py-12 text-center text-sm text-zinc-500">No items match these filters.</p>}
           </div>
-          <div className="flex shrink-0 justify-end border-t pt-3"><Button disabled={!name.trim() || selectedIds.length < 2 || isSaving} onClick={() => void handleCreate()}>{isSaving ? 'Saving...' : `Save outfit (${selectedIds.length})`}</Button></div>
+          <div className="flex shrink-0 justify-end border-t pt-3"><Button disabled={selectedIds.length < 2 || isSaving} onClick={() => void handleCreate()}>{isSaving ? 'Saving...' : `Save outfit (${selectedIds.length})`}</Button></div>
         </DialogContent>
       </Dialog>
     </>

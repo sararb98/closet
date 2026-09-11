@@ -41,14 +41,11 @@ export async function getOutfits(itemId?: string): Promise<OutfitWithItems[]> {
 }
 
 export async function createOutfit(input: {
-  name: string
   itemIds: string[]
   season: string[]
   occasion: OutfitOccasion | null
 }): Promise<{ success: boolean; error: string | null; outfit?: Outfit }> {
-  const name = input.name.trim()
   const itemIds = [...new Set(input.itemIds)]
-  if (!name) return { success: false, error: 'Enter an outfit name' }
   if (itemIds.length < 2) return { success: false, error: 'Choose at least two items' }
 
   const supabase = await createClient()
@@ -59,7 +56,6 @@ export async function createOutfit(input: {
     .from('outfits')
     .insert({
       user_id: user.id,
-      name,
       season: input.season,
       occasion: input.occasion,
     })

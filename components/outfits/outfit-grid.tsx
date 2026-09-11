@@ -76,11 +76,11 @@ export function OutfitGrid({ outfits, clothingItems, itemId }: Readonly<OutfitGr
       {filteredOutfits.length === 0 ? (
         <p className="py-8 text-center text-sm text-zinc-500">No saved outfits match these filters.</p>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-3 px-4">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3 px-4">
           {filteredOutfits.map((outfit) => (
             <OutfitCard key={outfit.id} outfit={outfit}>
-              <Button variant="ghost" size="icon" aria-label={`Delete ${outfit.name}`} onClick={() => setOutfitToDelete(outfit)}>
-                <Trash2 className="h-4 w-4 text-red-600" />
+              <Button variant="ghost" size="icon" className="group" aria-label="Delete outfit" onClick={() => setOutfitToDelete(outfit)}>
+                <Trash2 className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-red-600 dark:text-zinc-500 dark:group-hover:text-red-400" />
               </Button>
             </OutfitCard>
           ))}
@@ -92,7 +92,7 @@ export function OutfitGrid({ outfits, clothingItems, itemId }: Readonly<OutfitGr
           <DialogHeader>
             <DialogTitle>Delete this outfit?</DialogTitle>
             <DialogDescription>
-              {outfitToDelete ? `"${outfitToDelete.name}" will be permanently removed.` : 'This outfit will be permanently removed.'}
+              This outfit will be permanently removed.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

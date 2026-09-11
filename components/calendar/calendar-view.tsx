@@ -20,7 +20,7 @@ import { Check, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CalendarDay } from './calendar-day'
 import { ScheduledOutfitPicker } from './scheduled-outfit-picker'
-import { ClothingItemWithTags, CalendarDay as CalendarDayType, OutfitWithItems, ScheduledOutfitWithItems } from '@/types'
+import { ClothingItemWithTags, CalendarDay as CalendarDayType, OutfitWithItems, ScheduledOutfitWithItems, WeatherForecastDay } from '@/types'
 import { createScheduledOutfit, removeScheduledOutfit, updateScheduledOutfitStatus } from '@/lib/actions/calendar'
 import { useToast } from '@/hooks/use-toast'
 import { formatDateForDB } from '@/lib/utils'
@@ -29,17 +29,19 @@ interface CalendarViewProps {
   outfits: ScheduledOutfitWithItems[]
   savedOutfits: OutfitWithItems[]
   clothingItems: ClothingItemWithTags[]
+  forecast: WeatherForecastDay[]
   initialItemId?: string
 }
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-export function CalendarView({ outfits, savedOutfits, clothingItems, initialItemId }: Readonly<CalendarViewProps>) {
+export function CalendarView({ outfits, savedOutfits, clothingItems, forecast, initialItemId }: Readonly<CalendarViewProps>) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [calendarOutfits, setCalendarOutfits] = useState(outfits)
   const [selectedDate, setSelectedDate] = useState<Date | null>(() => new Date())
   const [isPickerOpen, setIsPickerOpen] = useState(Boolean(initialItemId))
   const { toast } = useToast()
+  const forecastByDate = useMemo(() => new Map(forecast.map((day) => [day.date, day])), [forecast])
 
   // Group outfits by date
   const outfitsByDate = useMemo(() => {
@@ -93,7 +95,7 @@ export function CalendarView({ outfits, savedOutfits, clothingItems, initialItem
     setSelectedDate(date)
   }, [])
 
-  const handleScheduleOutfit = useCallback(async (input: { itemIds: string[]; name: string; sourceOutfitId?: string | null }) => {
+  const handleScheduleOutfit = useCallback(async (input: { itemIds: string[]; sourceOutfitId?: string | null }) => {
     if (!selectedDate) return false
 
     const dateString = formatDateForDB(selectedDate)
@@ -106,7 +108,6 @@ export function CalendarView({ outfits, savedOutfits, clothingItems, initialItem
       user_id: 'optimistic',
       date: dateString,
       source_outfit_id: input.sourceOutfitId || null,
-      name: input.name,
       season: [],
       occasion: null,
       notes: null,
@@ -124,8 +125,8 @@ export function CalendarView({ outfits, savedOutfits, clothingItems, initialItem
         outfit.id === optimisticId ? { ...result.outfit!, status: 'planned', items } : outfit
       ))
       toast({
-        title: 'Outfit scheduled',
-        description: `Scheduled for ${format(selectedDate, 'MMM d, yyyy')}`,
+        title: 'Day plan saved',
+        description: `Clothes saved for ${format(selectedDate, 'MMM d, yyyy')}`,
       })
       return true
     }
@@ -210,7 +211,7 @@ export function CalendarView({ outfits, savedOutfits, clothingItems, initialItem
             className="grid grid-cols-7 gap-1"
           >
             {calendarDays.map((day) => (
-              <CalendarDay key={day.dateString} day={day} isSelected={selectedDate ? isSameDay(day.date, selectedDate) : false} onClick={() => handleDayClick(day.date)} />
+              <CalendarDay key={day.dateString} day={day} weather={forecastByDate.get(day.dateString)} isSelected={selectedDate ? isSameDay(day.date, selectedDate) : false} onClick={() => handleDayClick(day.date)} />
             ))}
           </motion.div>
         </div>
@@ -220,7 +221,7 @@ export function CalendarView({ outfits, savedOutfits, clothingItems, initialItem
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="font-semibold">{format(selectedDate, 'EEEE, MMM d')}</h3>
-                <p className="text-sm text-zinc-500">{selectedOutfits.length} outfit{selectedOutfits.length === 1 ? '' : 's'} planned</p>
+                <p className="text-sm text-zinc-500">{selectedOutfits.length} plan{selectedOutfits.length === 1 ? '' : 's'} for this day</p>
               </div>
               <Button size="sm" onClick={() => setIsPickerOpen(true)}><Plus className="mr-1 h-4 w-4" />Plan</Button>
             </div>
@@ -233,12 +234,12 @@ export function CalendarView({ outfits, savedOutfits, clothingItems, initialItem
                     {outfit.items[0] && <Image src={outfit.items[0].image_url} alt={outfit.items[0].name} fill className="object-cover" sizes="48px" />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{outfit.name}</p>
+                    <p className="truncate text-sm font-medium">{outfit.items.length} selected item{outfit.items.length === 1 ? '' : 's'}</p>
                     <p className="text-xs capitalize text-zinc-500">{outfit.status}{outfit.occasion ? ` · ${outfit.occasion}` : ''}</p>
                   </div>
                   <div className="flex shrink-0">
-                    {outfit.status === 'planned' && <Button size="icon" variant="ghost" aria-label={`Mark ${outfit.name} as worn`} onClick={() => void handleMarkWorn(outfit.id)}><Check className="h-4 w-4 text-emerald-600" /></Button>}
-                    <Button size="icon" variant="ghost" aria-label={`Remove ${outfit.name}`} onClick={() => void handleRemoveOutfit(outfit.id)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
+                    {outfit.status === 'planned' && <Button size="icon" variant="ghost" aria-label="Mark day plan as worn" onClick={() => void handleMarkWorn(outfit.id)}><Check className="h-4 w-4 text-emerald-600" /></Button>}
+                    <Button size="icon" variant="ghost" aria-label="Remove day plan" onClick={() => void handleRemoveOutfit(outfit.id)}><Trash2 className="h-4 w-4 text-red-600" /></Button>
                   </div>
                 </article>
               ))}

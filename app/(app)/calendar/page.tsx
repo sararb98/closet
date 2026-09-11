@@ -3,16 +3,43 @@ import { getCalendarOutfits } from '@/lib/actions/calendar'
 import { getClothingItems } from '@/lib/actions/clothing'
 import { getOutfits } from '@/lib/actions/outfits'
 import { CalendarView } from '@/components/calendar/calendar-view'
-import { WeatherSuggestions } from '@/components/calendar/weather-suggestions'
 import { LoadingCalendar } from '@/components/shared/loading'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import type { WeatherForecastDay } from '@/types/calendar'
 
 interface CalendarPageProps {
   searchParams: Promise<{
     item?: string
   }>
+}
+
+async function getValenciaForecast(): Promise<WeatherForecastDay[]> {
+  try {
+    const response = await fetch(
+      'https://api.open-meteo.com/v1/forecast?latitude=39.4699&longitude=-0.3763&daily=weather_code,temperature_2m_max,temperature_2m_min&past_days=7&forecast_days=7&timezone=Europe%2FMadrid',
+      { next: { revalidate: 3600 } }
+    )
+    if (!response.ok) return []
+
+    const data = await response.json() as {
+      daily?: { time?: string[]; weather_code?: number[]; temperature_2m_max?: number[]; temperature_2m_min?: number[] }
+    }
+    const daily = data.daily
+    if (!daily?.time || !daily.weather_code || !daily.temperature_2m_max || !daily.temperature_2m_min) return []
+
+    return daily.time.flatMap((date, index) => {
+      const high = daily.temperature_2m_max?.[index]
+      const low = daily.temperature_2m_min?.[index]
+      const weatherCode = daily.weather_code?.[index]
+      return typeof high === 'number' && typeof low === 'number' && typeof weatherCode === 'number'
+        ? [{ date, high, low, weatherCode }]
+        : []
+    })
+  } catch {
+    return []
+  }
 }
 
 export default async function CalendarPage({ searchParams }: Readonly<CalendarPageProps>) {
@@ -23,13 +50,14 @@ export default async function CalendarPage({ searchParams }: Readonly<CalendarPa
   const startDate = startOfMonth(currentDate)
   const endDate = endOfMonth(currentDate)
 
-  const [outfits, items, savedOutfits] = await Promise.all([
+  const [outfits, items, savedOutfits, forecast] = await Promise.all([
     getCalendarOutfits(
       format(startDate, 'yyyy-MM-dd'),
       format(endDate, 'yyyy-MM-dd')
     ),
     getClothingItems(),
     getOutfits(),
+    getValenciaForecast(),
   ])
 
   return (
@@ -44,11 +72,11 @@ export default async function CalendarPage({ searchParams }: Readonly<CalendarPa
       </div>
 
       <Suspense fallback={<LoadingCalendar />}>
-        <WeatherSuggestions items={items} />
         <CalendarView
           outfits={outfits}
           savedOutfits={savedOutfits}
           clothingItems={items}
+          forecast={forecast}
           initialItemId={params.item}
         />
       </Suspense>

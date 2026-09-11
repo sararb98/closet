@@ -221,7 +221,6 @@ export type Database = {
           user_id: string
           date: string
           source_outfit_id: string | null
-          name: string
           season: string[]
           occasion: string | null
           notes: string | null
@@ -235,7 +234,6 @@ export type Database = {
           user_id: string
           date: string
           source_outfit_id?: string | null
-          name: string
           season?: string[]
           occasion?: string | null
           notes?: string | null
@@ -249,7 +247,6 @@ export type Database = {
           user_id?: string
           date?: string
           source_outfit_id?: string | null
-          name?: string
           season?: string[]
           occasion?: string | null
           notes?: string | null
@@ -288,7 +285,6 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          name: string
           season: string[]
           occasion: string | null
           notes: string | null
@@ -298,7 +294,6 @@ export type Database = {
         Insert: {
           id?: string
           user_id: string
-          name: string
           season?: string[]
           occasion?: string | null
           notes?: string | null
@@ -308,7 +303,6 @@ export type Database = {
         Update: {
           id?: string
           user_id?: string
-          name?: string
           season?: string[]
           occasion?: string | null
           notes?: string | null

@@ -87,15 +87,12 @@ export async function getCalendarOutfits(
 export async function createScheduledOutfit(input: {
   date: string
   itemIds: string[]
-  name: string
   season?: string[]
   occasion?: OutfitOccasion | null
   sourceOutfitId?: string | null
 }): Promise<{ success: boolean; error: string | null; outfit?: CalendarOutfitInstance }> {
   const itemIds = [...new Set(input.itemIds)]
-  const name = input.name.trim()
   if (itemIds.length < 2) return { success: false, error: 'Choose at least two items' }
-  if (!name) return { success: false, error: 'Enter an outfit name' }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -117,7 +114,6 @@ export async function createScheduledOutfit(input: {
     .insert({
       user_id: user.id,
       date: input.date,
-      name,
       season: input.season || [],
       occasion: input.occasion || null,
       source_outfit_id: input.sourceOutfitId || null,
@@ -211,7 +207,6 @@ export async function createQuickWearLog(input: {
     .insert({
       user_id: user.id,
       date: input.date,
-      name: `Wear log for ${item.name}`,
       status: 'planned',
       position: 0,
     })

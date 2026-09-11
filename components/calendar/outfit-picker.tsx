@@ -45,7 +45,6 @@ export function OutfitPicker({
 }: Readonly<OutfitPickerProps>) {
   const [search, setSearch] = useState('')
   const [selectedType, setSelectedType] = useState<string>('all')
-  const [outfitName, setOutfitName] = useState('')
   const [outfitSeason, setOutfitSeason] = useState<Season | 'none'>('none')
   const [outfitOccasion, setOutfitOccasion] = useState<OutfitOccasion | 'none'>('none')
   const [isSavingOutfit, setIsSavingOutfit] = useState(false)
@@ -101,10 +100,8 @@ export function OutfitPicker({
   const handleSaveOutfit = async () => {
     if (!selectedDate) return
 
-    const date = selectedDate
     setIsSavingOutfit(true)
     const result = await createOutfit({
-      name: outfitName || `Outfit for ${format(date, 'MMM d')}`,
       itemIds: existingOutfits.map((outfit) => outfit.item_id),
       season: outfitSeason === 'none' ? [] : [outfitSeason],
       occasion: outfitOccasion === 'none' ? null : outfitOccasion,
@@ -166,12 +163,7 @@ export function OutfitPicker({
                 </motion.div>
               ))}
             </div>
-            <div className="grid gap-2 sm:grid-cols-[1fr_10rem_10rem_auto]">
-              <Input
-                placeholder="Outfit name"
-                value={outfitName}
-                onChange={(event) => setOutfitName(event.target.value)}
-              />
+            <div className="grid gap-2 sm:grid-cols-[10rem_10rem_auto]">
               <Select value={outfitSeason} onValueChange={(value) => setOutfitSeason(value as Season | 'none')}>
                 <SelectTrigger><SelectValue placeholder="Season" /></SelectTrigger>
                 <SelectContent>
@@ -193,7 +185,7 @@ export function OutfitPicker({
                 disabled={existingOutfits.length < 2 || isSavingOutfit}
               >
                 <BookmarkPlus className="mr-2 h-4 w-4" />
-                Save
+                Save to outfits
               </Button>
             </div>
           </div>

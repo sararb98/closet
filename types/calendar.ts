@@ -6,6 +6,13 @@ export interface CalendarOutfitWithItem extends CalendarOutfit {
 
 export type ScheduledOutfitStatus = 'planned' | 'worn' | 'skipped'
 
+export interface WeatherForecastDay {
+  date: string
+  high: number
+  low: number
+  weatherCode: number
+}
+
 export interface ScheduledOutfitWithItems extends CalendarOutfitInstance {
   status: ScheduledOutfitStatus
   items: ClothingItem[]
