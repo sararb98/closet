@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 import {
   format,
   startOfMonth,
@@ -15,47 +15,41 @@ import {
   isSameDay,
   isToday,
 } from 'date-fns'
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CalendarDay } from './calendar-day'
-import { OutfitPicker } from './outfit-picker'
-import { CalendarOutfitWithItem, ClothingItemWithTags, CalendarDay as CalendarDayType } from '@/types'
-import { addOutfitToCalendar, removeOutfitFromCalendar } from '@/lib/actions/calendar'
+import { ScheduledOutfitPicker } from './scheduled-outfit-picker'
+import { ClothingItemWithTags, CalendarDay as CalendarDayType, OutfitWithItems, ScheduledOutfitWithItems } from '@/types'
+import { createScheduledOutfit, removeScheduledOutfit, updateScheduledOutfitStatus } from '@/lib/actions/calendar'
 import { useToast } from '@/hooks/use-toast'
 import { formatDateForDB } from '@/lib/utils'
 
 interface CalendarViewProps {
-  outfits: CalendarOutfitWithItem[]
+  outfits: ScheduledOutfitWithItems[]
+  savedOutfits: OutfitWithItems[]
   clothingItems: ClothingItemWithTags[]
   initialItemId?: string
 }
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-export function CalendarView({ outfits, clothingItems, initialItemId }: CalendarViewProps) {
+export function CalendarView({ outfits, savedOutfits, clothingItems, initialItemId }: Readonly<CalendarViewProps>) {
   const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-  const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const [calendarOutfits, setCalendarOutfits] = useState(outfits)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(() => initialItemId ? new Date() : null)
+  const [isPickerOpen, setIsPickerOpen] = useState(Boolean(initialItemId))
   const { toast } = useToast()
-
-  // Open picker if initialItemId is provided
-  useState(() => {
-    if (initialItemId) {
-      setSelectedDate(new Date())
-      setIsPickerOpen(true)
-    }
-  })
 
   // Group outfits by date
   const outfitsByDate = useMemo(() => {
-    const map = new Map<string, CalendarOutfitWithItem[]>()
-    outfits.forEach((outfit) => {
+    const map = new Map<string, ScheduledOutfitWithItems[]>()
+    calendarOutfits.forEach((outfit) => {
       const existing = map.get(outfit.date) || []
       existing.push(outfit)
       map.set(outfit.date, existing)
     })
     return map
-  }, [outfits])
+  }, [calendarOutfits])
 
   // Generate calendar days
   const calendarDays = useMemo((): CalendarDayType[] => {
@@ -99,37 +93,83 @@ export function CalendarView({ outfits, clothingItems, initialItemId }: Calendar
     setIsPickerOpen(true)
   }, [])
 
-  const handleAddOutfit = useCallback(async (itemId: string) => {
-    if (!selectedDate) return
+  const handleScheduleOutfit = useCallback(async (input: { itemIds: string[]; name: string; sourceOutfitId?: string | null }) => {
+    if (!selectedDate) return false
 
     const dateString = formatDateForDB(selectedDate)
-    const result = await addOutfitToCalendar(itemId, dateString)
+    const items = clothingItems.filter((item) => input.itemIds.includes(item.id))
+    if (items.length !== input.itemIds.length) return false
 
-    if (result.success) {
-      toast({
-        title: 'Outfit added',
-        description: `Added to ${format(selectedDate, 'MMM d, yyyy')}`,
-      })
-    } else {
-      toast({
-        title: 'Error',
-        description: result.error || 'Failed to add outfit',
-        variant: 'destructive',
-      })
+    const optimisticId = `optimistic-${Date.now()}`
+    const optimisticOutfit: ScheduledOutfitWithItems = {
+      id: optimisticId,
+      user_id: 'optimistic',
+      date: dateString,
+      source_outfit_id: input.sourceOutfitId || null,
+      name: input.name,
+      season: [],
+      occasion: null,
+      notes: null,
+      status: 'planned',
+      position: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      items,
     }
-  }, [selectedDate, toast])
+    setCalendarOutfits((current) => [...current, optimisticOutfit])
+    const result = await createScheduledOutfit({ date: dateString, ...input })
+
+    if (result.success && result.outfit) {
+      setCalendarOutfits((current) => current.map((outfit) =>
+        outfit.id === optimisticId ? { ...result.outfit!, status: 'planned', items } : outfit
+      ))
+      toast({
+        title: 'Outfit scheduled',
+        description: `Scheduled for ${format(selectedDate, 'MMM d, yyyy')}`,
+      })
+      return true
+    }
+
+    setCalendarOutfits((current) => current.filter((outfit) => outfit.id !== optimisticId))
+    toast({
+      title: 'Error',
+      description: result.error || 'Failed to add outfit',
+      variant: 'destructive',
+    })
+    return false
+  }, [clothingItems, selectedDate, toast])
 
   const handleRemoveOutfit = useCallback(async (outfitId: string) => {
-    const result = await removeOutfitFromCalendar(outfitId)
+    const removedOutfit = calendarOutfits.find((outfit) => outfit.id === outfitId)
+    setCalendarOutfits((current) => current.filter((outfit) => outfit.id !== outfitId))
+    const result = await removeScheduledOutfit(outfitId)
 
     if (!result.success) {
+      if (removedOutfit) {
+        setCalendarOutfits((current) => [...current, removedOutfit])
+      }
       toast({
         title: 'Error',
         description: result.error || 'Failed to remove outfit',
         variant: 'destructive',
       })
+      return false
     }
-  }, [toast])
+    return true
+  }, [calendarOutfits, toast])
+
+  const handleMarkWorn = useCallback(async (outfitId: string) => {
+    const existing = calendarOutfits.find((outfit) => outfit.id === outfitId)
+    if (!existing) return false
+    setCalendarOutfits((current) => current.map((outfit) => outfit.id === outfitId ? { ...outfit, status: 'worn' } : outfit))
+    const result = await updateScheduledOutfitStatus(outfitId, 'worn')
+    if (!result.success) {
+      setCalendarOutfits((current) => current.map((outfit) => outfit.id === outfitId ? existing : outfit))
+      toast({ title: 'Error', description: result.error || 'Failed to mark outfit as worn', variant: 'destructive' })
+      return false
+    }
+    return true
+  }, [calendarOutfits, toast])
 
   return (
     <div className="space-y-4 px-4">
@@ -181,20 +221,21 @@ export function CalendarView({ outfits, clothingItems, initialItemId }: Calendar
             day={day}
             isSelected={selectedDate ? isSameDay(day.date, selectedDate) : false}
             onClick={() => handleDayClick(day.date)}
-            onRemoveOutfit={handleRemoveOutfit}
           />
         ))}
       </motion.div>
 
       {/* Outfit picker dialog */}
-      <OutfitPicker
+      <ScheduledOutfitPicker
         open={isPickerOpen}
         onOpenChange={setIsPickerOpen}
         selectedDate={selectedDate}
         clothingItems={clothingItems}
-        existingOutfits={selectedDate ? outfitsByDate.get(formatDateForDB(selectedDate)) || [] : []}
-        onAddOutfit={handleAddOutfit}
-        onRemoveOutfit={handleRemoveOutfit}
+        savedOutfits={savedOutfits}
+        scheduledOutfits={selectedDate ? outfitsByDate.get(formatDateForDB(selectedDate)) || [] : []}
+        onSchedule={handleScheduleOutfit}
+        onRemove={handleRemoveOutfit}
+        onMarkWorn={handleMarkWorn}
         initialItemId={initialItemId}
       />
     </div>

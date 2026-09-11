@@ -158,6 +158,132 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_outfit_instances: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          source_outfit_id: string | null
+          name: string
+          season: string[]
+          occasion: string | null
+          notes: string | null
+          status: string
+          position: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          source_outfit_id?: string | null
+          name: string
+          season?: string[]
+          occasion?: string | null
+          notes?: string | null
+          status?: string
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          source_outfit_id?: string | null
+          name?: string
+          season?: string[]
+          occasion?: string | null
+          notes?: string | null
+          status?: string
+          position?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      calendar_outfit_instance_items: {
+        Row: {
+          id: string
+          calendar_outfit_instance_id: string
+          item_id: string
+          position: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          calendar_outfit_instance_id: string
+          item_id: string
+          position?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          calendar_outfit_instance_id?: string
+          item_id?: string
+          position?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      outfits: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          season: string[]
+          occasion: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          season?: string[]
+          occasion?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          season?: string[]
+          occasion?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      outfit_items: {
+        Row: {
+          id: string
+          outfit_id: string
+          item_id: string
+          position: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          outfit_id: string
+          item_id: string
+          position?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          outfit_id?: string
+          item_id?: string
+          position?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           id: string
@@ -211,8 +337,14 @@ export type ClothingItem = Tables<'clothing_items'>
 export type ClothingTag = Tables<'clothing_tags'>
 export type ItemTag = Tables<'item_tags'>
 export type CalendarOutfit = Tables<'calendar_outfits'>
+export type CalendarOutfitInstance = Tables<'calendar_outfit_instances'>
+export type CalendarOutfitInstanceItem = Tables<'calendar_outfit_instance_items'>
+export type Outfit = Tables<'outfits'>
+export type OutfitItem = Tables<'outfit_items'>
 export type UserPreferences = Tables<'user_preferences'>
 
 export type NewClothingItem = InsertTables<'clothing_items'>
 export type UpdateClothingItem = UpdateTables<'clothing_items'>
 export type NewCalendarOutfit = InsertTables<'calendar_outfits'>
+export type NewCalendarOutfitInstance = InsertTables<'calendar_outfit_instances'>
+export type NewOutfit = InsertTables<'outfits'>

@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { getCalendarOutfits } from '@/lib/actions/calendar'
 import { getClothingItems } from '@/lib/actions/clothing'
+import { getOutfits } from '@/lib/actions/outfits'
 import { CalendarView } from '@/components/calendar/calendar-view'
 import { LoadingCalendar } from '@/components/shared/loading'
 import { startOfMonth, endOfMonth, format } from 'date-fns'
@@ -11,7 +12,7 @@ interface CalendarPageProps {
   }>
 }
 
-export default async function CalendarPage({ searchParams }: CalendarPageProps) {
+export default async function CalendarPage({ searchParams }: Readonly<CalendarPageProps>) {
   const params = await searchParams
   
   // Get current month's outfits
@@ -19,12 +20,13 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
   const startDate = startOfMonth(currentDate)
   const endDate = endOfMonth(currentDate)
 
-  const [outfits, items] = await Promise.all([
+  const [outfits, items, savedOutfits] = await Promise.all([
     getCalendarOutfits(
       format(startDate, 'yyyy-MM-dd'),
       format(endDate, 'yyyy-MM-dd')
     ),
     getClothingItems(),
+    getOutfits(),
   ])
 
   return (
@@ -41,6 +43,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
       <Suspense fallback={<LoadingCalendar />}>
         <CalendarView
           outfits={outfits}
+          savedOutfits={savedOutfits}
           clothingItems={items}
           initialItemId={params.item}
         />

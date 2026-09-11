@@ -174,6 +174,7 @@ export async function deleteClothingItem(
 
   revalidatePath('/closet')
   revalidatePath('/calendar')
+  revalidatePath('/insights')
   return { success: true, error: null }
 }
 
@@ -219,6 +220,7 @@ export async function setClothingItemsArchived(
 
   revalidatePath('/closet')
   revalidatePath('/calendar')
+  revalidatePath('/insights')
   return { success: true, error: null }
 }
 

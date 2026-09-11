@@ -44,6 +44,9 @@ interface ColorRow {
 
 interface OutfitDateRow {
   date: string
+  calendar_outfit_instance_items: Array<{
+    clothing_item: { archived: boolean } | null
+  }>
 }
 
 interface StatsRow {
@@ -62,6 +65,7 @@ export async function getMostWornItems(limit: number = 10): Promise<MostWornItem
     .from('clothing_items')
     .select('id, name, image_url, wear_count, type')
     .eq('user_id', user.id)
+    .eq('archived', false)
     .gt('wear_count', 0)
     .order('wear_count', { ascending: false })
     .limit(limit)
@@ -84,6 +88,7 @@ export async function getSeasonalUsage(): Promise<SeasonalUsage[]> {
     .from('clothing_items')
     .select('season')
     .eq('user_id', user.id)
+    .eq('archived', false)
 
   if (error) {
     console.error('Error fetching seasonal usage:', error)
@@ -115,6 +120,7 @@ export async function getTypeDistribution(): Promise<TypeDistribution[]> {
     .from('clothing_items')
     .select('type')
     .eq('user_id', user.id)
+    .eq('archived', false)
 
   if (error) {
     console.error('Error fetching type distribution:', error)
@@ -148,6 +154,7 @@ export async function getColorDistribution(): Promise<ColorDistribution[]> {
     .from('clothing_items')
     .select('color')
     .eq('user_id', user.id)
+    .eq('archived', false)
 
   if (error) {
     console.error('Error fetching color distribution:', error)
@@ -180,9 +187,10 @@ export async function getMonthlyActivity(months: number = 6): Promise<MonthlyAct
   startDate.setDate(1)
 
   const { data, error } = await supabase
-    .from('calendar_outfits')
-    .select('date')
+    .from('calendar_outfit_instances')
+    .select('date, calendar_outfit_instance_items(clothing_item:clothing_items(archived))')
     .eq('user_id', user.id)
+    .eq('status', 'worn')
     .gte('date', startDate.toISOString().split('T')[0])
     .lte('date', endDate.toISOString().split('T')[0])
 
@@ -202,13 +210,13 @@ export async function getMonthlyActivity(months: number = 6): Promise<MonthlyAct
     monthCounts[monthKey] = 0
   }
 
-  // Count items per month
-  const outfits = (data || []) as OutfitDateRow[]
+  // Count non-archived worn items per month.
+  const outfits = (data || []) as unknown as OutfitDateRow[]
   outfits.forEach(outfit => {
     const date = new Date(outfit.date)
     const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
     if (monthCounts[monthKey] !== undefined) {
-      monthCounts[monthKey]++
+      monthCounts[monthKey] += outfit.calendar_outfit_instance_items.filter((item) => !item.clothing_item?.archived).length
     }
   })
 
@@ -227,11 +235,13 @@ export async function getClosetStats() {
     supabase
       .from('clothing_items')
       .select('id, wear_count, is_favorite')
-      .eq('user_id', user.id),
+      .eq('user_id', user.id)
+      .eq('archived', false),
     supabase
-      .from('calendar_outfits')
+      .from('calendar_outfit_instances')
       .select('id')
-      .eq('user_id', user.id),
+      .eq('user_id', user.id)
+      .eq('status', 'worn'),
     supabase
       .from('clothing_tags')
       .select('id')

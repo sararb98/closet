@@ -1,8 +1,14 @@
-import { CalendarOutfit, ClothingItem } from './database'
+import { CalendarOutfit, CalendarOutfitInstance, ClothingItem } from './database'
 
-// Calendar outfit with item details
 export interface CalendarOutfitWithItem extends CalendarOutfit {
   clothing_item?: ClothingItem
+}
+
+export type ScheduledOutfitStatus = 'planned' | 'worn' | 'skipped'
+
+export interface ScheduledOutfitWithItems extends CalendarOutfitInstance {
+  status: ScheduledOutfitStatus
+  items: ClothingItem[]
 }
 
 // Calendar day with outfits
@@ -11,14 +17,14 @@ export interface CalendarDay {
   dateString: string
   isCurrentMonth: boolean
   isToday: boolean
-  outfits: CalendarOutfitWithItem[]
+  outfits: ScheduledOutfitWithItems[]
 }
 
 // Calendar view state
 export interface CalendarViewState {
   currentMonth: Date
   selectedDate: Date | null
-  outfits: Map<string, CalendarOutfitWithItem[]>
+  outfits: Map<string, ScheduledOutfitWithItems[]>
 }
 
 // Month navigation

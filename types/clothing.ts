@@ -26,6 +26,41 @@ export const CLOTHING_TYPES = [
 
 export type ClothingType = typeof CLOTHING_TYPES[number]['value']
 
+const OUTFIT_TYPE_ORDER: readonly ClothingType[] = [
+  'dress',
+  'shirt',
+  't-shirt',
+  'blouse',
+  'sweater',
+  'jacket',
+  'coat',
+  'pants',
+  'jeans',
+  'shorts',
+  'skirt',
+  'shoes',
+  'sneakers',
+  'boots',
+  'sandals',
+  'bag',
+  'hat',
+  'jewelry',
+  'accessories',
+  'other',
+]
+
+const outfitTypeRanks = new Map(OUTFIT_TYPE_ORDER.map((type, index) => [type, index]))
+
+export function compareOutfitItemTypes(
+  left: Pick<ClothingItem, 'type' | 'name'>,
+  right: Pick<ClothingItem, 'type' | 'name'>
+) {
+  const rankDifference = (outfitTypeRanks.get(left.type as ClothingType) ?? OUTFIT_TYPE_ORDER.length) -
+    (outfitTypeRanks.get(right.type as ClothingType) ?? OUTFIT_TYPE_ORDER.length)
+
+  return rankDifference || left.name.localeCompare(right.name)
+}
+
 // Seasons
 export const SEASONS = [
   { value: 'spring', label: 'Spring', icon: '🌸', color: '#10b981' },

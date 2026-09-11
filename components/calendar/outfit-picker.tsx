@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'motion/react'
 import { format } from 'date-fns'
-import { Search, X, Check, Plus } from 'lucide-react'
+import { Search, X, Check, Plus, BookmarkPlus } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -15,8 +15,11 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ClothingItemWithTags, CalendarOutfitWithItem, CLOTHING_TYPES } from '@/types'
+import { ClothingItemWithTags, CalendarOutfitWithItem, CLOTHING_TYPES, compareOutfitItemTypes, OUTFIT_OCCASIONS, SEASONS, Season, OutfitOccasion } from '@/types'
 import { cn } from '@/lib/utils'
+import { createOutfit } from '@/lib/actions/outfits'
+import { useToast } from '@/hooks/use-toast'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface OutfitPickerProps {
   open: boolean
@@ -24,8 +27,8 @@ interface OutfitPickerProps {
   selectedDate: Date | null
   clothingItems: ClothingItemWithTags[]
   existingOutfits: CalendarOutfitWithItem[]
-  onAddOutfit: (itemId: string) => void
-  onRemoveOutfit: (outfitId: string) => void
+  onAddOutfit: (itemId: string) => Promise<boolean>
+  onRemoveOutfit: (outfitId: string) => Promise<boolean>
   initialItemId?: string
 }
 
@@ -41,6 +44,11 @@ export function OutfitPicker({
 }: OutfitPickerProps) {
   const [search, setSearch] = useState('')
   const [selectedType, setSelectedType] = useState<string>('all')
+  const [outfitName, setOutfitName] = useState('')
+  const [outfitSeason, setOutfitSeason] = useState<Season | 'none'>('none')
+  const [outfitOccasion, setOutfitOccasion] = useState<OutfitOccasion | 'none'>('none')
+  const [isSavingOutfit, setIsSavingOutfit] = useState(false)
+  const { toast } = useToast()
 
   // Get existing item IDs for this date
   const existingItemIds = useMemo(
@@ -68,25 +76,45 @@ export function OutfitPicker({
       }
 
       return true
-    })
+    }).sort(compareOutfitItemTypes)
   }, [clothingItems, search, selectedType])
 
   // Group items by type for tabs
   const itemTypes = useMemo(() => {
     const types = new Set(clothingItems.map((item) => item.type))
-    return Array.from(types).sort()
+    return Array.from(types).sort((left, right) => left.localeCompare(right))
   }, [clothingItems])
 
-  const handleItemClick = (item: ClothingItemWithTags) => {
+  const handleItemClick = async (item: ClothingItemWithTags) => {
     if (existingItemIds.has(item.id)) {
       // Find and remove the outfit
       const outfit = existingOutfits.find((o) => o.item_id === item.id)
       if (outfit) {
-        onRemoveOutfit(outfit.id)
+        await onRemoveOutfit(outfit.id)
       }
     } else {
-      onAddOutfit(item.id)
+      await onAddOutfit(item.id)
     }
+  }
+
+  const handleSaveOutfit = async () => {
+    if (!selectedDate) return
+
+    const date = selectedDate
+    setIsSavingOutfit(true)
+    const result = await createOutfit({
+      name: outfitName || `Outfit for ${format(date, 'MMM d')}`,
+      itemIds: existingOutfits.map((outfit) => outfit.item_id),
+      season: outfitSeason === 'none' ? [] : [outfitSeason],
+      occasion: outfitOccasion === 'none' ? null : outfitOccasion,
+    })
+    setIsSavingOutfit(false)
+
+    toast({
+      title: result.success ? 'Outfit saved' : 'Error',
+      description: result.success ? 'Available now in Outfits.' : result.error || 'Failed to save outfit',
+      variant: result.success ? 'default' : 'destructive',
+    })
   }
 
   if (!selectedDate) return null
@@ -106,7 +134,9 @@ export function OutfitPicker({
           <div className="space-y-2">
             <p className="text-sm text-zinc-500">Selected items:</p>
             <div className="flex flex-wrap gap-2">
-              {existingOutfits.map((outfit) => (
+              {[...existingOutfits].sort((left, right) =>
+                compareOutfitItemTypes(left.clothing_item!, right.clothing_item!)
+              ).map((outfit) => (
                 <motion.div
                   key={outfit.id}
                   initial={{ opacity: 0, scale: 0.8 }}
@@ -124,7 +154,7 @@ export function OutfitPicker({
                         sizes="48px"
                       />
                       <button
-                        onClick={() => onRemoveOutfit(outfit.id)}
+                        onClick={() => void onRemoveOutfit(outfit.id)}
                         className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                       >
                         <X className="h-4 w-4 text-white" />
@@ -133,6 +163,36 @@ export function OutfitPicker({
                   )}
                 </motion.div>
               ))}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-[1fr_10rem_10rem_auto]">
+              <Input
+                placeholder="Outfit name"
+                value={outfitName}
+                onChange={(event) => setOutfitName(event.target.value)}
+              />
+              <Select value={outfitSeason} onValueChange={(value) => setOutfitSeason(value as Season | 'none')}>
+                <SelectTrigger><SelectValue placeholder="Season" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Any season</SelectItem>
+                  {SEASONS.map((season) => <SelectItem key={season.value} value={season.value}>{season.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={outfitOccasion} onValueChange={(value) => setOutfitOccasion(value as OutfitOccasion | 'none')}>
+                <SelectTrigger><SelectValue placeholder="Use" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Any use</SelectItem>
+                  {OUTFIT_OCCASIONS.map((occasion) => <SelectItem key={occasion.value} value={occasion.value}>{occasion.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void handleSaveOutfit()}
+                disabled={existingOutfits.length < 2 || isSavingOutfit}
+              >
+                <BookmarkPlus className="mr-2 h-4 w-4" />
+                Save
+              </Button>
             </div>
           </div>
         )}

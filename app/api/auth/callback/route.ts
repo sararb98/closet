@@ -32,5 +32,11 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/confirm?${params}`)
   }
 
-  return NextResponse.redirect(`${origin}/login?error=Could not authenticate`)
+  // Implicit-flow tokens arrive in the URL fragment, which is never sent to
+  // this server route. The confirmation page can read that fragment and set
+  // the browser session, so preserve the requested destination there.
+  const params = new URLSearchParams()
+  if (next !== '/closet') params.set('next', next)
+  const confirmUrl = `${origin}/confirm${params.size ? `?${params}` : ''}`
+  return NextResponse.redirect(confirmUrl)
 }

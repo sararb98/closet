@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { PasswordResetRequest } from '@/components/auth/password-reset-request'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
@@ -63,14 +64,7 @@ export default async function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 p-4">
-                <h3 className="font-medium text-zinc-900 dark:text-zinc-100">
-                  Change Password
-                </h3>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">
-                  Password change options coming soon
-                </p>
-              </div>
+              <PasswordResetRequest email={user.email ?? ''} />
             </CardContent>
           </Card>
         </div>

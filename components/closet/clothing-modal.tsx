@@ -1,8 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import { motion, AnimatePresence } from 'motion/react'
-import { X, Heart, Pencil, Trash2, Calendar, Tag } from 'lucide-react'
+import { motion } from 'motion/react'
+import { Heart, Pencil, Trash2, Tag } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ClothingItemWithTags, CLOTHING_TYPES, COLORS, SEASONS } from '@/types'
-import { formatDate, cn } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
+import Link from 'next/link'
 
 interface ClothingModalProps {
   item: ClothingItemWithTags | null
@@ -178,6 +179,11 @@ export function ClothingModal({
 
               {/* Actions */}
               <div className="flex gap-2 pt-4">
+                <Button variant="outline" asChild>
+                  <Link href={`/outfits?item=${item.id}`} onClick={(event) => event.stopPropagation()}>
+                    Outfits
+                  </Link>
+                </Button>
                 {onEdit && (
                   <Button variant="outline" className="flex-1" onClick={onEdit}>
                     <Pencil className="mr-2 h-4 w-4" />

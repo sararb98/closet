@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'motion/react'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, createEmailLinkClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -40,9 +40,10 @@ export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter()
   const supabase = createClient()
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   const clearAlerts = () => { setError(null); setMessage(null) }
   const switchTo = (next: SubMode) => { clearAlerts(); setSubMode(next) }
+
+  const getAppUrl = () => window.location.origin
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,10 +51,10 @@ export function AuthForm({ mode }: AuthFormProps) {
     clearAlerts()
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({
+        const { error } = await createEmailLinkClient().auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${appUrl}/confirm` },
+          options: { emailRedirectTo: `${getAppUrl()}/confirm` },
         })
         if (error) throw error
         setMessage('Check your email for the confirmation link!')
@@ -75,10 +76,10 @@ export function AuthForm({ mode }: AuthFormProps) {
     setLoading(true)
     clearAlerts()
     try {
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await createEmailLinkClient().auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${appUrl}/confirm`,
+          emailRedirectTo: `${getAppUrl()}/confirm`,
           shouldCreateUser: mode === 'signup',
         },
       })
@@ -96,8 +97,8 @@ export function AuthForm({ mode }: AuthFormProps) {
     setLoading(true)
     clearAlerts()
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${appUrl}/confirm?next=/reset-password`,
+      const { error } = await createEmailLinkClient().auth.resetPasswordForEmail(email, {
+        redirectTo: `${getAppUrl()}/confirm?next=/reset-password`,
       })
       if (error) throw error
       setMessage('Password reset link sent — check your email!')

@@ -348,6 +348,7 @@ export function ItemForm({ item, onSuccess }: ItemFormProps) {
                   min="0"
                   step="0.01"
                   value={formData.purchase_price}
+                  onWheel={(e) => e.currentTarget.blur()}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, purchase_price: e.target.value }))
                   }

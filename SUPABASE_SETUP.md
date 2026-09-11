@@ -57,8 +57,9 @@ supabase db push
 
 1. Go to Authentication → URL Configuration
 2. Add your site URL: `http://localhost:3000` (for development)
-3. Add redirect URLs:
-   - `http://localhost:3000/api/auth/callback`
+3. Add redirect URLs (include the exact host and port currently serving the app):
+   - `http://localhost:3000/confirm`
+   - `http://localhost:3001/confirm` (when Next starts on port 3001)
    - `http://localhost:3000/closet`
 4. For production, add your production URLs
 

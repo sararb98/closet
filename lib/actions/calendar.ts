@@ -2,14 +2,23 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import type { CalendarOutfit, ClothingItem } from '@/types/database'
-import type { CalendarOutfitWithItem } from '@/types/calendar'
+import type { CalendarOutfit, CalendarOutfitInstance, ClothingItem } from '@/types/database'
+import { compareOutfitItemTypes } from '@/types/clothing'
+import type { CalendarOutfitWithItem, ScheduledOutfitStatus, ScheduledOutfitWithItems } from '@/types/calendar'
+import type { OutfitOccasion } from '@/types/outfit'
 
 interface CalendarOutfitWithRelation extends CalendarOutfit {
   clothing_item: ClothingItem | null
 }
 
-export async function getCalendarOutfits(
+interface ScheduledOutfitRelation extends CalendarOutfitInstance {
+  calendar_outfit_instance_items: Array<{
+    position: number
+    clothing_item: ClothingItem | null
+  }>
+}
+
+export async function getLegacyCalendarOutfits(
   startDate: string,
   endDate: string
 ): Promise<CalendarOutfitWithItem[]> {
@@ -38,7 +47,140 @@ export async function getCalendarOutfits(
   return ((data || []) as unknown as CalendarOutfitWithRelation[]).map(outfit => ({
     ...outfit,
     clothing_item: outfit.clothing_item!
-  })).filter(o => o.clothing_item !== null) as CalendarOutfitWithItem[]
+  })).filter(o => o.clothing_item !== null).sort((left, right) =>
+    compareOutfitItemTypes(left.clothing_item, right.clothing_item)
+  ) as CalendarOutfitWithItem[]
+}
+
+export async function getCalendarOutfits(
+  startDate: string,
+  endDate: string
+): Promise<ScheduledOutfitWithItems[]> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return []
+
+  const { data, error } = await supabase
+    .from('calendar_outfit_instances')
+    .select('*, calendar_outfit_instance_items(position, clothing_item:clothing_items(*))')
+    .eq('user_id', user.id)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date')
+    .order('position')
+
+  if (error) {
+    console.error('Error fetching scheduled outfits:', error)
+    return []
+  }
+
+  return ((data || []) as unknown as ScheduledOutfitRelation[]).map((outfit) => ({
+    ...outfit,
+    status: outfit.status as ScheduledOutfitStatus,
+    items: outfit.calendar_outfit_instance_items
+      .map((entry) => entry.clothing_item)
+      .filter((item): item is ClothingItem => item !== null)
+      .sort(compareOutfitItemTypes),
+  }))
+}
+
+export async function createScheduledOutfit(input: {
+  date: string
+  itemIds: string[]
+  name: string
+  season?: string[]
+  occasion?: OutfitOccasion | null
+  sourceOutfitId?: string | null
+}): Promise<{ success: boolean; error: string | null; outfit?: CalendarOutfitInstance }> {
+  const itemIds = [...new Set(input.itemIds)]
+  const name = input.name.trim()
+  if (itemIds.length < 2) return { success: false, error: 'Choose at least two items' }
+  if (!name) return { success: false, error: 'Enter an outfit name' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const [{ count: itemCount }, { data: lastInstance }, sourceResult] = await Promise.all([
+    supabase.from('clothing_items').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('archived', false).in('id', itemIds),
+    supabase.from('calendar_outfit_instances').select('position').eq('user_id', user.id).eq('date', input.date).order('position', { ascending: false }).limit(1).maybeSingle(),
+    input.sourceOutfitId
+      ? supabase.from('outfits').select('id').eq('id', input.sourceOutfitId).eq('user_id', user.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ])
+
+  if (itemCount !== itemIds.length) return { success: false, error: 'One or more selected items are unavailable' }
+  if (input.sourceOutfitId && !sourceResult.data) return { success: false, error: 'The original outfit is unavailable' }
+
+  const { data: outfit, error: outfitError } = await supabase
+    .from('calendar_outfit_instances')
+    .insert({
+      user_id: user.id,
+      date: input.date,
+      name,
+      season: input.season || [],
+      occasion: input.occasion || null,
+      source_outfit_id: input.sourceOutfitId || null,
+      position: (lastInstance?.position ?? -1) + 1,
+    })
+    .select()
+    .single()
+
+  if (outfitError || !outfit) {
+    console.error('Error creating scheduled outfit:', outfitError)
+    return { success: false, error: outfitError?.message || 'Failed to schedule outfit' }
+  }
+
+  const { error: itemsError } = await supabase.from('calendar_outfit_instance_items').insert(
+    itemIds.map((itemId, position) => ({ calendar_outfit_instance_id: outfit.id, item_id: itemId, position }))
+  )
+  if (itemsError) {
+    await supabase.from('calendar_outfit_instances').delete().eq('id', outfit.id)
+    console.error('Error creating scheduled outfit items:', itemsError)
+    return { success: false, error: itemsError.message }
+  }
+
+  revalidatePath('/calendar')
+  return { success: true, error: null, outfit }
+}
+
+export async function removeScheduledOutfit(outfitId: string): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const { error } = await supabase.from('calendar_outfit_instances').delete().eq('id', outfitId).eq('user_id', user.id)
+  if (error) {
+    console.error('Error removing scheduled outfit:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/calendar')
+  return { success: true, error: null }
+}
+
+export async function updateScheduledOutfitStatus(
+  outfitId: string,
+  status: ScheduledOutfitStatus
+): Promise<{ success: boolean; error: string | null }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const { error } = await supabase
+    .from('calendar_outfit_instances')
+    .update({ status })
+    .eq('id', outfitId)
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('Error updating scheduled outfit:', error)
+    return { success: false, error: error.message }
+  }
+
+  revalidatePath('/calendar')
+  revalidatePath('/insights')
+  return { success: true, error: null }
 }
 
 export async function getOutfitsForDate(date: string): Promise<CalendarOutfitWithItem[]> {
@@ -65,14 +207,16 @@ export async function getOutfitsForDate(date: string): Promise<CalendarOutfitWit
   return ((data || []) as unknown as CalendarOutfitWithRelation[]).map(outfit => ({
     ...outfit,
     clothing_item: outfit.clothing_item!
-  })).filter(o => o.clothing_item !== null) as CalendarOutfitWithItem[]
+  })).filter(o => o.clothing_item !== null).sort((left, right) =>
+    compareOutfitItemTypes(left.clothing_item, right.clothing_item)
+  ) as CalendarOutfitWithItem[]
 }
 
 export async function addOutfitToCalendar(
   itemId: string,
   date: string,
   notes?: string
-): Promise<{ success: boolean; error: string | null }> {
+): Promise<{ success: boolean; error: string | null; outfit?: CalendarOutfit }> {
   const supabase = await createClient()
   
   const { data: { user } } = await supabase.auth.getUser()
@@ -102,9 +246,11 @@ export async function addOutfitToCalendar(
     notes,
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('calendar_outfits')
     .insert(outfitData)
+    .select()
+    .single()
 
   if (error) {
     // Handle duplicate constraint
@@ -118,7 +264,7 @@ export async function addOutfitToCalendar(
   revalidatePath('/calendar')
   revalidatePath('/closet')
   revalidatePath('/insights')
-  return { success: true, error: null }
+  return { success: true, error: null, outfit: data }
 }
 
 export async function removeOutfitFromCalendar(

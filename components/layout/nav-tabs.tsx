@@ -4,11 +4,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'motion/react'
 import { cn } from '@/lib/utils'
-import { Shirt, Calendar, Plus, BarChart3 } from 'lucide-react'
+import { Shirt, Calendar, Plus, BarChart3, Layers } from 'lucide-react'
 
 const navItems = [
   { href: '/closet', label: 'Closet', icon: Shirt },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
+  { href: '/outfits', label: 'Outfits', icon: Layers },
   { href: '/add', label: 'Add', icon: Plus },
   { href: '/insights', label: 'Insights', icon: BarChart3 },
 ]
